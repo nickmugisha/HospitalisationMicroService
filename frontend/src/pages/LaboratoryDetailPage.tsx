@@ -1,7 +1,9 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  Download,
   Microscope,
+  Printer,
   Plus,
   Save,
   TestTube2,
@@ -25,6 +27,11 @@ import {
   saveLaboratoryTests,
   startAnalysis,
 } from "../services/laboratoryService";
+
+import {
+  exportLaboratoryResultPdf,
+  printLaboratoryResult,
+} from "../services/documentService";
 
 import type {
   LaboratoryRequest,
@@ -236,6 +243,30 @@ export default function LaboratoryDetailPage() {
         </div>
 
         <div className="medical-header-actions">
+          {request.status === "COMPLETED" && (
+            <>
+              <button
+                className="secondary-action medical-save"
+                onClick={() =>
+                  exportLaboratoryResultPdf(request)
+                }
+              >
+                <Download size={16} />
+                PDF
+              </button>
+
+              <button
+                className="secondary-action medical-save"
+                onClick={() =>
+                  printLaboratoryResult(request)
+                }
+              >
+                <Printer size={16} />
+                Imprimer
+              </button>
+            </>
+          )}
+
           {request.status ===
             "WAITING" && (
             <button
