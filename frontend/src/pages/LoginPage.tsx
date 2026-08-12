@@ -21,6 +21,7 @@ export default function LoginPage() {
   const {
     login,
     isAuthenticated,
+    user,
   } = useAuth();
 
   const [username, setUsername] = useState("");
@@ -32,7 +33,16 @@ export default function LoginPage() {
     useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return (
+      <Navigate
+        to={
+          user?.roles.includes("PATIENT")
+            ? "/patient"
+            : "/"
+        }
+        replace
+      />
+    );
   }
 
   async function handleSubmit(
@@ -47,21 +57,29 @@ export default function LoginPage() {
       setTimeout(resolve, 500)
     );
 
-    const success = await login(
-      username,
-      password
-    );
+    const authenticatedUser =
+      await login(
+        username,
+        password
+      );
 
     setLoading(false);
 
-    if (!success) {
+    if (!authenticatedUser) {
       setError(
         "Identifiant ou mot de passe incorrect."
       );
+
       return;
     }
 
-    navigate("/");
+    navigate(
+      authenticatedUser.roles.includes(
+        "PATIENT"
+      )
+        ? "/patient"
+        : "/"
+    );
   }
 
   return (

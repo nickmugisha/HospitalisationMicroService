@@ -800,6 +800,7 @@ export async function requestAppointmentByPatient(
   input: {
     patientId: string;
     service: Appointment["service"];
+    preferredDoctorName: string;
     preferredDate: string;
     preferredTime: string;
     reason: string;
@@ -826,6 +827,12 @@ export async function requestAppointmentByPatient(
   if (!input.preferredTime) {
     throw new Error(
       "Veuillez choisir une heure."
+    );
+  }
+
+  if (!input.preferredDoctorName.trim()) {
+    throw new Error(
+      "Veuillez choisir un médecin."
     );
   }
 
@@ -863,7 +870,7 @@ export async function requestAppointmentByPatient(
       input.service,
 
     doctorName:
-      "",
+      input.preferredDoctorName.trim(),
 
     date:
       input.preferredDate,
@@ -1062,4 +1069,82 @@ export async function listPatientAppointments(
       appointment.patientId ===
       patientId
   );
+}
+
+export async function completePatientAppointmentForService(
+  patientId: string,
+  service: Appointment["service"]
+): Promise<Appointment | null> {
+  const appointments =
+    loadAppointments();
+
+  const candidates =
+    appointments
+      .filter(
+        appointment =>
+          appointment.patientId ===
+            patientId &&
+          appointment.service ===
+            service &&
+          appointment.status ===
+            "CHECKED_IN"
+      )
+      .sort(
+        (a, b) => {
+          const dateA =
+            a.checkedInAt ??
+            a.updatedAt ??
+            a.createdAt;
+
+          const dateB =
+            b.checkedInAt ??
+            b.updatedAt ??
+            b.createdAt;
+
+          return (
+            new Date(dateB).getTime() -
+            new Date(dateA).getTime()
+          );
+        }
+      );
+
+  const appointment =
+    candidates[0];
+
+  if (!appointment) {
+    return null;
+  }
+
+  const index =
+    appointments.findIndex(
+      current =>
+        current.id ===
+        appointment.id
+    );
+
+  if (index === -1) {
+    return null;
+  }
+
+  const now =
+    new Date().toISOString();
+
+  appointments[index] = {
+    ...appointments[index],
+
+    status:
+      "COMPLETED",
+
+    completedAt:
+      now,
+
+    updatedAt:
+      now,
+  };
+
+  saveAppointments(
+    appointments
+  );
+
+  return appointments[index];
 }

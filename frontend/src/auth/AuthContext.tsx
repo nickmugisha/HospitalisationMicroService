@@ -5,34 +5,68 @@ import {
   type ReactNode,
 } from "react";
 
-import type { AppRole } from "../config/modules";
+import type {
+  AppRole,
+} from "../config/modules";
 
 export interface AuthUser {
   id: string;
   fullName: string;
   username: string;
   roles: AppRole[];
+
+  patientNumber?: string;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
+
   isAuthenticated: boolean;
+
   login: (
     username: string,
     password: string
-  ) => Promise<boolean>;
+  ) => Promise<AuthUser | null>;
+
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(
-  undefined
-);
+const AuthContext =
+  createContext<
+    AuthContextValue | undefined
+  >(undefined);
 
-const DEMO_USER: AuthUser = {
-  id: "demo-admin",
-  fullName: "Administrateur Hospitalis",
-  username: "admin",
-  roles: ["ADMIN"],
+const DEMO_ADMIN:
+  AuthUser = {
+  id:
+    "demo-admin",
+
+  fullName:
+    "Administrateur Hospitalis",
+
+  username:
+    "admin",
+
+  roles:
+    ["ADMIN"],
+};
+
+const DEMO_PATIENT:
+  AuthUser = {
+  id:
+    "demo-patient",
+
+  fullName:
+    "kenny love",
+
+  username:
+    "patient",
+
+  roles:
+    ["PATIENT"],
+
+  patientNumber:
+    "PAT-2026-0003",
 };
 
 export function AuthProvider({
@@ -40,43 +74,86 @@ export function AuthProvider({
 }: {
   children: ReactNode;
 }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const stored = localStorage.getItem("hospitalis_user");
+  const [
+    user,
+    setUser,
+  ] =
+    useState<AuthUser | null>(
+      () => {
+        const stored =
+          localStorage.getItem(
+            "hospitalis_user"
+          );
 
-    if (!stored) return null;
+        if (!stored) {
+          return null;
+        }
 
-    try {
-      return JSON.parse(stored) as AuthUser;
-    } catch {
-      return null;
-    }
-  });
+        try {
+          return JSON.parse(
+            stored
+          ) as AuthUser;
+        } catch {
+          return null;
+        }
+      }
+    );
 
   async function login(
     username: string,
     password: string
-  ): Promise<boolean> {
-    // MODE DEMO TEMPORAIRE
-    // Cette partie sera remplacée par le vrai AuthService gRPC.
+  ): Promise<AuthUser | null> {
+    const normalizedUsername =
+      username
+        .trim()
+        .toLowerCase();
+
+    let authenticatedUser:
+      AuthUser | null = null;
+
     if (
-      username.trim() === "admin" &&
-      password === "Demo123!"
+      normalizedUsername ===
+        "admin" &&
+      password ===
+        "Demo123!"
     ) {
-      localStorage.setItem(
-        "hospitalis_user",
-        JSON.stringify(DEMO_USER)
-      );
-
-      setUser(DEMO_USER);
-
-      return true;
+      authenticatedUser =
+        DEMO_ADMIN;
     }
 
-    return false;
+    if (
+      normalizedUsername ===
+        "patient" &&
+      password ===
+        "Patient123!"
+    ) {
+      authenticatedUser =
+        DEMO_PATIENT;
+    }
+
+    if (!authenticatedUser) {
+      return null;
+    }
+
+    localStorage.setItem(
+      "hospitalis_user",
+      JSON.stringify(
+        authenticatedUser
+      )
+    );
+
+    setUser(
+      authenticatedUser
+    );
+
+    return authenticatedUser;
   }
 
   function logout() {
-    localStorage.removeItem("hospitalis_user");
+    localStorage.removeItem(
+      "hospitalis_user"
+    );
+
     setUser(null);
   }
 
@@ -84,8 +161,12 @@ export function AuthProvider({
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: Boolean(user),
+
+        isAuthenticated:
+          Boolean(user),
+
         login,
+
         logout,
       }}
     >
@@ -95,7 +176,10 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(
+      AuthContext
+    );
 
   if (!context) {
     throw new Error(

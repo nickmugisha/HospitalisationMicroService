@@ -82,6 +82,8 @@ export interface PatientAppointmentRequestInput {
 
   service: AppointmentService;
 
+  preferredDoctorName: string;
+
   preferredDate: string;
   preferredTime: string;
 

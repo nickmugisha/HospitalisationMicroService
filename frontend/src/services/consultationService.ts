@@ -5,9 +5,15 @@ import type {
 } from "../types/consultation";
 
 import {
+  closePatientJourney,
+  getPatientById,
   listPatients,
   sendPatientToService,
 } from "./patientService";
+
+import {
+  completePatientAppointmentForService,
+} from "./appointmentService";
 
 const STORAGE_KEY =
   "hospitalis_consultations";
@@ -344,6 +350,44 @@ export async function completeConsultation(
   saveConsultations(
     consultations
   );
+
+  /*
+   * Si cette consultation provient
+   * d'un rendez-vous ayant effectué
+   * son check-in, le rendez-vous est
+   * maintenant terminé automatiquement.
+   */
+  await completePatientAppointmentForService(
+    consultations[index].patientId,
+    "Consultation"
+  );
+
+  /*
+   * Si le médecin n'a pas transféré
+   * le patient vers un autre service,
+   * le parcours courant est terminé.
+   *
+   * Si Laboratoire/Hospitalisation
+   * a déjà été demandé, targetService
+   * aura déjà changé et on ne ferme
+   * donc pas ce nouveau parcours.
+   */
+  const patient =
+    await getPatientById(
+      consultations[index].patientId
+    );
+
+  if (
+    patient?.targetService ===
+      "Consultation" &&
+    patient.arrivalStatus ===
+      "ORIENTED"
+  ) {
+    await closePatientJourney(
+      patient.id,
+      "Consultation terminée - parcours clôturé"
+    );
+  }
 
   return consultations[index];
 }

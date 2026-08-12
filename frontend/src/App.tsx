@@ -20,6 +20,11 @@ import HospitalizationPage from "./pages/HospitalizationPage";
 import ConsultationDetailPage from "./pages/ConsultationDetailPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import LoginPage from "./pages/LoginPage";
+import PatientLayout from "./layouts/PatientLayout";
+import PatientDashboardPage from "./pages/PatientDashboardPage";
+import PatientAppointmentsPage from "./pages/PatientAppointmentsPage";
+import PatientComingPage from "./pages/PatientComingPage";
+
 import LaboratoryDetailPage from "./pages/LaboratoryDetailPage";
 import LaboratoryPage from "./pages/LaboratoryPage";
 import PatientDetailPage from "./pages/PatientDetailPage";
@@ -141,6 +146,63 @@ function App() {
               <ModulePage
                 title="Assistant intelligent"
                 description="Chatbot d'assistance hospitalière."
+              />
+            }
+          />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route
+          path="patient"
+          element={<PatientLayout />}
+        >
+          <Route
+            index
+            element={<PatientDashboardPage />}
+          />
+
+          <Route
+            path="rendez-vous"
+            element={<PatientAppointmentsPage />}
+          />
+
+          <Route
+            path="resultats"
+            element={
+              <PatientComingPage
+                title="Mes résultats"
+                description="Vos résultats de laboratoire seront disponibles ici."
+              />
+            }
+          />
+
+          <Route
+            path="ordonnances"
+            element={
+              <PatientComingPage
+                title="Mes ordonnances"
+                description="Vos prescriptions et délivrances seront disponibles ici."
+              />
+            }
+          />
+
+          <Route
+            path="factures"
+            element={
+              <PatientComingPage
+                title="Mes factures"
+                description="Vos factures, paiements et reçus seront disponibles ici."
+              />
+            }
+          />
+
+          <Route
+            path="notifications"
+            element={
+              <PatientComingPage
+                title="Notifications"
+                description="Les confirmations et rappels de rendez-vous apparaîtront ici."
               />
             }
           />
