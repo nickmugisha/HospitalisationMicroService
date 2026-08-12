@@ -15,6 +15,10 @@ import type {
   PharmacyOrder,
 } from "../types/pharmacy";
 
+import type {
+  MaternityCase,
+} from "../types/maternity";
+
 import {
   invoiceBalance,
   invoicePaid,
@@ -1049,6 +1053,283 @@ export function printPharmacyDelivery(
     buildPharmacyDeliveryPdf(
       order,
       medications
+    )
+  );
+}
+
+
+/* =========================================================
+   MATERNITE
+========================================================= */
+
+function buildMaternitySummaryPdf(
+  maternity: MaternityCase
+) {
+  const doc =
+    new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+  addHeader(
+    doc,
+    "COMPTE-RENDU MATERNITE",
+    maternity.patientNumber
+  );
+
+  doc.setFontSize(15);
+
+  doc.text(
+    maternity.patientName,
+    15,
+    48
+  );
+
+  doc.setFontSize(9);
+
+  doc.setTextColor(
+    90,
+    105,
+    118
+  );
+
+  doc.text(
+    `Numero patient : ${maternity.patientNumber}`,
+    15,
+    56
+  );
+
+  doc.text(
+    `Admission : ${formatDate(
+      maternity.admittedAt
+    )}`,
+    15,
+    62
+  );
+
+  doc.text(
+    `Accouchement : ${formatDate(
+      maternity.deliveredAt
+    )}`,
+    15,
+    68
+  );
+
+  doc.setTextColor(
+    35,
+    52,
+    68
+  );
+
+  autoTable(doc, {
+    startY: 78,
+
+    body: [
+      [
+        "Age gestationnel",
+        maternity.gestationalAgeWeeks
+          ? `${maternity.gestationalAgeWeeks} semaines`
+          : "—",
+      ],
+
+      [
+        "Gravida / Para",
+        `${maternity.gravida || "—"} / ${maternity.para || "—"}`,
+      ],
+
+      [
+        "Groupe sanguin",
+        maternity.bloodGroup || "—",
+      ],
+
+      [
+        "Type d'accouchement",
+        maternity.deliveryType || "—",
+      ],
+
+      [
+        "Facteurs de risque",
+        maternity.riskNotes || "Aucun",
+      ],
+
+      [
+        "Notes d'accouchement",
+        maternity.deliveryNotes || "—",
+      ],
+    ],
+
+    theme: "grid",
+
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+    },
+
+    columnStyles: {
+      0: {
+        fontStyle: "bold",
+        cellWidth: 48,
+      },
+    },
+  });
+
+  let y =
+    getLastTableY(
+      doc,
+      110
+    ) + 12;
+
+  if (maternity.newborn) {
+    doc.setFontSize(12);
+
+    doc.text(
+      "Nouveau-ne",
+      15,
+      y
+    );
+
+    y += 6;
+
+    autoTable(doc, {
+      startY: y,
+
+      head: [[
+        "Nom",
+        "Sexe",
+        "Poids",
+        "Taille",
+        "APGAR 1'",
+        "APGAR 5'",
+      ]],
+
+      body: [[
+        maternity.newborn.name ||
+          "Nouveau-ne",
+
+        maternity.newborn.sex ===
+        "M"
+          ? "Masculin"
+          : "Feminin",
+
+        `${maternity.newborn.weightGrams} g`,
+
+        `${maternity.newborn.lengthCm} cm`,
+
+        String(
+          maternity.newborn.apgar1
+        ),
+
+        String(
+          maternity.newborn.apgar5
+        ),
+      ]],
+
+      theme: "grid",
+
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+
+      headStyles: {
+        fillColor: [
+          17,
+          125,
+          105,
+        ],
+        textColor: 255,
+      },
+    });
+
+    y =
+      getLastTableY(
+        doc,
+        y + 20
+      ) + 10;
+
+    doc.setFontSize(8);
+
+    doc.text(
+      `Observations nouveau-ne : ${maternity.newborn.observations || "Aucune"}`,
+      15,
+      y,
+      {
+        maxWidth: 180,
+      }
+    );
+  }
+
+  if (
+    maternity.dischargeNotes
+  ) {
+    y += 16;
+
+    doc.setFontSize(11);
+
+    doc.text(
+      "Recommandations de sortie",
+      15,
+      y
+    );
+
+    y += 6;
+
+    doc.setFontSize(8);
+
+    doc.text(
+      maternity.dischargeNotes,
+      15,
+      y,
+      {
+        maxWidth: 180,
+      }
+    );
+  }
+
+  addFooter(doc);
+
+  return doc;
+}
+
+export function exportMaternitySummaryPdf(
+  maternity: MaternityCase
+) {
+  if (
+    maternity.status !==
+      "DELIVERED" &&
+    maternity.status !==
+      "DISCHARGED"
+  ) {
+    throw new Error(
+      "L'accouchement doit etre enregistre avant l'export."
+    );
+  }
+
+  buildMaternitySummaryPdf(
+    maternity
+  ).save(
+    `MATERNITE_${maternity.patientNumber}.pdf`
+  );
+}
+
+export function printMaternitySummary(
+  maternity: MaternityCase
+) {
+  if (
+    maternity.status !==
+      "DELIVERED" &&
+    maternity.status !==
+      "DISCHARGED"
+  ) {
+    throw new Error(
+      "L'accouchement doit etre enregistre avant impression."
+    );
+  }
+
+  openPdfForPrint(
+    buildMaternitySummaryPdf(
+      maternity
     )
   );
 }

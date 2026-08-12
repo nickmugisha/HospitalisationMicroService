@@ -8,6 +8,8 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import MaternityDetailPage from "./pages/MaternityDetailPage";
+import MaternityPage from "./pages/MaternityPage";
 import PharmacyOrderDetailPage from "./pages/PharmacyOrderDetailPage";
 import PharmacyPage from "./pages/PharmacyPage";
 import BillingDetailPage from "./pages/BillingDetailPage";
@@ -99,12 +101,12 @@ function App() {
 
           <Route
             path="maternite"
-            element={
-              <ModulePage
-                title="Maternité"
-                description="Suivi obstétrical, admission et naissance."
-              />
-            }
+            element={<MaternityPage />}
+          />
+
+          <Route
+            path="maternite/:caseId"
+            element={<MaternityDetailPage />}
           />
 
           <Route

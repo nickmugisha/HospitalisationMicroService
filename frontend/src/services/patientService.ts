@@ -426,3 +426,58 @@ export async function sendPatientToService(
 
   return updated;
 }
+
+export async function closePatientJourney(
+  patientId: string,
+  label = "Parcours patient terminé"
+): Promise<Patient> {
+  const patients =
+    loadPatients();
+
+  const index =
+    patients.findIndex(
+      (patient) =>
+        patient.id === patientId
+    );
+
+  if (index === -1) {
+    throw new Error(
+      "Patient introuvable"
+    );
+  }
+
+  const current =
+    patients[index];
+
+  const updated: Patient = {
+    ...current,
+
+    arrivalStatus: "NONE",
+
+    targetService:
+      undefined,
+
+    arrivalReason:
+      undefined,
+
+    updatedAt:
+      new Date().toISOString(),
+
+    history: [
+      createHistory(
+        "UPDATED",
+        label
+      ),
+      ...(current.history ?? []),
+    ],
+  };
+
+  patients[index] =
+    updated;
+
+  savePatients(
+    patients
+  );
+
+  return updated;
+}
