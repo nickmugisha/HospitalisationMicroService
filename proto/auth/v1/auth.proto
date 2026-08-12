@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package hospital.auth.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// ==========================================================
+// PROJECTX - AUTHENTICATION & NOTIFICATION SERVICE V1
+// Port: 50051
+// ==========================================================
+
+service AuthService {
+
+  rpc Login(LoginRequest)
+      returns (LoginResponse);
+
+  rpc ValidateToken(ValidateTokenRequest)
+      returns (ValidateTokenResponse);
+
+  rpc GetCurrentUser(GetCurrentUserRequest)
+      returns (UserResponse);
+
+  rpc CreateUser(CreateUserRequest)
+      returns (UserResponse);
+
+  rpc AssignRole(AssignRoleRequest)
+      returns (UserResponse);
+
+  rpc SendNotification(SendNotificationRequest)
+      returns (NotificationResponse);
+
+  rpc ListNotifications(ListNotificationsRequest)
+      returns (ListNotificationsResponse);
+
+  rpc MarkNotificationRead(MarkNotificationReadRequest)
+      returns (NotificationResponse);
+
+  rpc HealthCheck(hospital.common.v1.HealthRequest)
+      returns (hospital.common.v1.HealthResponse);
+}
+
+// ==========================================================
+// ENUMS
+// ==========================================================
+
+enum NotificationStatus {
+  NOTIFICATION_STATUS_UNSPECIFIED = 0;
+  NOTIFICATION_STATUS_UNREAD = 1;
+  NOTIFICATION_STATUS_READ = 2;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_DISABLED = 2;
+}
+
+// ==========================================================
+// AUTH
+// ==========================================================
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string token_type = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  User user = 2;
+}
+
+// ==========================================================
+// USERS
+// ==========================================================
+
+message User {
+  string id = 1;
+  string username = 2;
+  string display_name = 3;
+  UserStatus status = 4;
+  repeated string roles = 5;
+  repeated string permissions = 6;
+}
+
+message GetCurrentUserRequest {
+  string access_token = 1;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+  string display_name = 3;
+  repeated string roles = 4;
+  hospital.common.v1.AuditMetadata audit = 5;
+}
+
+message UserResponse {
+  User user = 1;
+}
+
+message AssignRoleRequest {
+  string user_id = 1;
+  string role_code = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
+
+// ==========================================================
+// NOTIFICATIONS
+// ==========================================================
+
+message Notification {
+  string id = 1;
+  string recipient_id = 2;
+  string type = 3;
+  string title = 4;
+  string body = 5;
+  NotificationStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp read_at = 8;
+}
+
+message SendNotificationRequest {
+  string recipient_id = 1;
+  string type = 2;
+  string title = 3;
+  string body = 4;
+  hospital.common.v1.AuditMetadata audit = 5;
+}
+
+message NotificationResponse {
+  Notification notification = 1;
+}
+
+message ListNotificationsRequest {
+  string recipient_id = 1;
+  hospital.common.v1.PageRequest page = 2;
+}
+
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  hospital.common.v1.PageInfo page = 2;
+}
+
+message MarkNotificationReadRequest {
+  string notification_id = 1;
+  hospital.common.v1.AuditMetadata audit = 2;
+}

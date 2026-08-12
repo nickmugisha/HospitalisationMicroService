@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package hospital.common.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ==========================================================
+// PROJECTX - COMMON CONTRACTS V1
+// Shared by every hospital microservice.
+// ==========================================================
+
+message Empty {
+}
+
+message PageRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message PageInfo {
+  int32 page = 1;
+  int32 page_size = 2;
+  int64 total_items = 3;
+  int32 total_pages = 4;
+}
+
+message Money {
+  int64 amount_minor = 1;
+  string currency_code = 2;
+}
+
+message AuditMetadata {
+  string actor_id = 1;
+  string correlation_id = 2;
+  string client_request_id = 3;
+  string idempotency_key = 4;
+}
+
+message HealthRequest {
+  string caller = 1;
+}
+
+enum ServiceHealthStatus {
+  SERVICE_HEALTH_STATUS_UNSPECIFIED = 0;
+  SERVICE_HEALTH_STATUS_ONLINE = 1;
+  SERVICE_HEALTH_STATUS_DEGRADED = 2;
+  SERVICE_HEALTH_STATUS_OFFLINE = 3;
+}
+
+message HealthResponse {
+  ServiceHealthStatus status = 1;
+  string service_name = 2;
+  string version = 3;
+  string message = 4;
+  google.protobuf.Timestamp checked_at = 5;
+}
