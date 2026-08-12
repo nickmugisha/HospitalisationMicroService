@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package hospital;
+
+service HospitalSystemService {
+
+  rpc HealthCheck(HealthRequest)
+      returns (HealthResponse);
+
+  rpc SayHello(HelloRequest)
+      returns (HelloResponse);
+}
+
+message HealthRequest {
+  string client_name = 1;
+}
+
+message HealthResponse {
+  bool success = 1;
+  string status = 2;
+  string server_name = 3;
+  string message = 4;
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string message = 1;
+}
