@@ -8,6 +8,10 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import PharmacyOrderDetailPage from "./pages/PharmacyOrderDetailPage";
+import PharmacyPage from "./pages/PharmacyPage";
+import BillingDetailPage from "./pages/BillingDetailPage";
+import BillingPage from "./pages/BillingPage";
 import HospitalizationDetailPage from "./pages/HospitalizationDetailPage";
 import HospitalizationPage from "./pages/HospitalizationPage";
 import ConsultationDetailPage from "./pages/ConsultationDetailPage";
@@ -55,12 +59,12 @@ function App() {
 
           <Route
             path="paiement"
-            element={
-              <ModulePage
-                title="Paiement & facturation"
-                description="Charges, factures, paiements et reçus."
-              />
-            }
+            element={<BillingPage />}
+          />
+
+          <Route
+            path="paiement/:invoiceId"
+            element={<BillingDetailPage />}
           />
 
           <Route
@@ -85,12 +89,12 @@ function App() {
 
           <Route
             path="pharmacie"
-            element={
-              <ModulePage
-                title="Pharmacie, stock & logistique"
-                description="Médicaments, lots, stock et délivrances."
-              />
-            }
+            element={<PharmacyPage />}
+          />
+
+          <Route
+            path="pharmacie/ordonnances/:orderId"
+            element={<PharmacyOrderDetailPage />}
           />
 
           <Route

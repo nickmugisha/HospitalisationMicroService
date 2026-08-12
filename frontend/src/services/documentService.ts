@@ -10,6 +10,11 @@ import type {
   InvoicePayment,
 } from "../types/billing";
 
+import type {
+  Medication,
+  PharmacyOrder,
+} from "../types/pharmacy";
+
 import {
   invoiceBalance,
   invoicePaid,
@@ -35,9 +40,35 @@ function formatDate(
 function formatMoney(
   value: number
 ): string {
-  return `${new Intl.NumberFormat(
-    "fr-FR"
-  ).format(value)} BIF`;
+  const formatted =
+    new Intl.NumberFormat(
+      "fr-FR"
+    )
+      .format(value)
+      .replace(/\u202f|\u00a0/g, " ");
+
+  return `${formatted} BIF`;
+}
+
+function paymentMethodLabel(
+  method: string
+): string {
+  switch (method) {
+    case "CASH":
+      return "Especes";
+
+    case "MOBILE_MONEY":
+      return "Mobile Money";
+
+    case "BANK":
+      return "Banque";
+
+    case "CARD":
+      return "Carte";
+
+    default:
+      return method;
+  }
 }
 
 function addHeader(
@@ -611,7 +642,9 @@ function buildInvoicePdf(
               payment.paidAt
             ),
 
-            payment.method,
+            paymentMethodLabel(
+              payment.method
+            ),
 
             payment.reference ||
               "—",
@@ -754,7 +787,9 @@ function buildPaymentReceiptPdf(
     ],
     [
       "Mode",
-      payment.method,
+      paymentMethodLabel(
+        payment.method
+      ),
     ],
     [
       "Reference",
@@ -833,6 +868,187 @@ export function printPaymentReceipt(
     buildPaymentReceiptPdf(
       invoice,
       payment
+    )
+  );
+}
+
+
+/* =========================================================
+   PHARMACIE
+========================================================= */
+
+function buildPharmacyDeliveryPdf(
+  order: PharmacyOrder,
+  medications: Medication[]
+) {
+  const doc =
+    new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+  addHeader(
+    doc,
+    "BON DE DELIVRANCE PHARMACIE",
+    order.patientNumber
+  );
+
+  doc.setFontSize(15);
+
+  doc.text(
+    order.patientName,
+    15,
+    48
+  );
+
+  doc.setFontSize(9);
+
+  doc.setTextColor(
+    90,
+    105,
+    118
+  );
+
+  doc.text(
+    `Numero patient : ${order.patientNumber}`,
+    15,
+    56
+  );
+
+  doc.text(
+    `Date de delivrance : ${formatDate(
+      order.dispensedAt
+    )}`,
+    15,
+    62
+  );
+
+  doc.setTextColor(
+    35,
+    52,
+    68
+  );
+
+  autoTable(doc, {
+    startY: 72,
+
+    head: [[
+      "Medicament",
+      "Dosage",
+      "Frequence",
+      "Duree",
+      "Quantite",
+    ]],
+
+    body:
+      order.items.map(
+        (item) => {
+          const medication =
+            medications.find(
+              (current) =>
+                current.id ===
+                item.medicationId
+            );
+
+          return [
+            medication
+              ? `${medication.name} ${medication.strength}`
+              : item.prescribedName,
+
+            item.dosage || "—",
+
+            item.frequency || "—",
+
+            item.duration || "—",
+
+            String(
+              item.dispensedQuantity
+            ),
+          ];
+        }
+      ),
+
+    theme: "grid",
+
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+    },
+
+    headStyles: {
+      fillColor: [
+        17,
+        125,
+        105,
+      ],
+      textColor: 255,
+    },
+  });
+
+  const finalY =
+    getLastTableY(
+      doc,
+      100
+    );
+
+  doc.setFontSize(8);
+
+  doc.setTextColor(
+    105,
+    115,
+    125
+  );
+
+  doc.text(
+    "Document de tracabilite de la delivrance pharmaceutique.",
+    15,
+    finalY + 12
+  );
+
+  addFooter(doc);
+
+  return doc;
+}
+
+export function exportPharmacyDeliveryPdf(
+  order: PharmacyOrder,
+  medications: Medication[]
+) {
+  if (
+    order.status !==
+    "DISPENSED"
+  ) {
+    throw new Error(
+      "L'ordonnance doit etre entierement delivree avant export."
+    );
+  }
+
+  buildPharmacyDeliveryPdf(
+    order,
+    medications
+  ).save(
+    `PHARMACIE_${order.patientNumber}.pdf`
+  );
+}
+
+export function printPharmacyDelivery(
+  order: PharmacyOrder,
+  medications: Medication[]
+) {
+  if (
+    order.status !==
+    "DISPENSED"
+  ) {
+    throw new Error(
+      "L'ordonnance doit etre entierement delivree avant impression."
+    );
+  }
+
+  openPdfForPrint(
+    buildPharmacyDeliveryPdf(
+      order,
+      medications
     )
   );
 }

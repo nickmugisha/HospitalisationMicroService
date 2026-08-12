@@ -526,3 +526,83 @@ export async function registerPayment(
 
   return invoice;
 }
+
+export async function addServiceCharge(
+  input: {
+    patientId: string;
+    patientNumber: string;
+    patientName: string;
+
+    sourceType: BillingSource;
+    sourceId: string;
+
+    description: string;
+    amount: number;
+  }
+): Promise<Invoice> {
+  const invoices =
+    loadInvoices();
+
+  const alreadyExists =
+    invoices.find(
+      (invoice) =>
+        invoice.items.some(
+          (item) =>
+            item.sourceType ===
+              input.sourceType &&
+            item.sourceId ===
+              input.sourceId
+        )
+    );
+
+  if (alreadyExists) {
+    return alreadyExists;
+  }
+
+  if (
+    !Number.isFinite(
+      input.amount
+    ) ||
+    input.amount <= 0
+  ) {
+    throw new Error(
+      "Montant de prestation invalide"
+    );
+  }
+
+  const invoice =
+    findOrCreateOpenInvoice(
+      invoices,
+      {
+        id:
+          input.patientId,
+
+        number:
+          input.patientNumber,
+
+        name:
+          input.patientName,
+      }
+    );
+
+  addItem(
+    invoice,
+    {
+      sourceType:
+        input.sourceType,
+
+      sourceId:
+        input.sourceId,
+
+      description:
+        input.description,
+
+      amount:
+        input.amount,
+    }
+  );
+
+  saveInvoices(invoices);
+
+  return invoice;
+}
