@@ -8,6 +8,8 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import HospitalizationDetailPage from "./pages/HospitalizationDetailPage";
+import HospitalizationPage from "./pages/HospitalizationPage";
 import ConsultationDetailPage from "./pages/ConsultationDetailPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import LoginPage from "./pages/LoginPage";
@@ -43,12 +45,12 @@ function App() {
 
           <Route
             path="hospitalisation"
-            element={
-              <ModulePage
-                title="Hospitalisation"
-                description="Admissions, chambres, lits, transferts et sorties."
-              />
-            }
+            element={<HospitalizationPage />}
+          />
+
+          <Route
+            path="hospitalisation/:admissionId"
+            element={<HospitalizationDetailPage />}
           />
 
           <Route
