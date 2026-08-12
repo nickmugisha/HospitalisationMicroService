@@ -11,6 +11,8 @@ import DashboardPage from "./pages/DashboardPage";
 import ConsultationDetailPage from "./pages/ConsultationDetailPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import LoginPage from "./pages/LoginPage";
+import LaboratoryDetailPage from "./pages/LaboratoryDetailPage";
+import LaboratoryPage from "./pages/LaboratoryPage";
 import PatientDetailPage from "./pages/PatientDetailPage";
 import ModulePage from "./pages/ModulePage";
 
@@ -71,12 +73,12 @@ function App() {
 
           <Route
             path="laboratoire"
-            element={
-              <ModulePage
-                title="Laboratoire"
-                description="Demandes d'analyses, prélèvements et résultats."
-              />
-            }
+            element={<LaboratoryPage />}
+          />
+
+          <Route
+            path="laboratoire/:requestId"
+            element={<LaboratoryDetailPage />}
           />
 
           <Route

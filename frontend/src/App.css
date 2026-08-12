@@ -1805,3 +1805,98 @@ button {
     height: 40px;
   }
 }
+
+/* =========================================================
+   LABORATOIRE
+========================================================= */
+
+.laboratory-status {
+  display: inline-flex;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.laboratory-status.waiting {
+  background: #fff4d9;
+  color: #936313;
+}
+
+.laboratory-status.sample_collected {
+  background: #e9f2fb;
+  color: #346b99;
+}
+
+.laboratory-status.in_analysis {
+  background: #efeafd;
+  color: #6851a4;
+}
+
+.laboratory-status.completed {
+  background: #e7f8f1;
+  color: #087658;
+}
+
+.laboratory-request-info {
+  margin-top: 18px;
+}
+
+.laboratory-request-info p {
+  margin: 0;
+  padding: 15px;
+  border-radius: 11px;
+  background: #f7f9fa;
+  color: #5d7080;
+  line-height: 1.6;
+}
+
+.laboratory-tests-card {
+  margin-top: 18px;
+}
+
+.laboratory-tests {
+  display: grid;
+  gap: 10px;
+}
+
+.laboratory-test-row {
+  display: grid;
+  grid-template-columns:
+    1.3fr 1fr 0.7fr 1.2fr 90px 42px;
+  gap: 8px;
+  align-items: center;
+}
+
+.laboratory-test-row > input {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #dce4ea;
+  border-radius: 9px;
+  outline: none;
+}
+
+.laboratory-test-row > input:focus {
+  border-color: #117d69;
+}
+
+.abnormal-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7c5760;
+  font-size: 10px;
+}
+
+@media (max-width: 1050px) {
+  .laboratory-test-row {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .laboratory-test-row {
+    grid-template-columns: 1fr;
+  }
+}
