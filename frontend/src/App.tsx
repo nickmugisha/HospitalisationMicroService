@@ -8,6 +8,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import AppointmentPage from "./pages/AppointmentPage";
 import MaternityDetailPage from "./pages/MaternityDetailPage";
 import MaternityPage from "./pages/MaternityPage";
 import PharmacyOrderDetailPage from "./pages/PharmacyOrderDetailPage";
@@ -111,12 +112,7 @@ function App() {
 
           <Route
             path="rendez-vous"
-            element={
-              <ModulePage
-                title="Rendez-vous & agenda"
-                description="Rendez-vous médicaux et organisation de l'agenda."
-              />
-            }
+            element={<AppointmentPage />}
           />
 
           <Route

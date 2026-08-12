@@ -19,6 +19,11 @@ import type {
   MaternityCase,
 } from "../types/maternity";
 
+
+import type {
+  Appointment,
+} from "../types/appointment";
+
 import {
   invoiceBalance,
   invoicePaid,
@@ -1330,6 +1335,237 @@ export function printMaternitySummary(
   openPdfForPrint(
     buildMaternitySummaryPdf(
       maternity
+    )
+  );
+}
+
+
+/* =========================================================
+   RENDEZ-VOUS
+========================================================= */
+
+function appointmentStatusLabel(
+  status: Appointment["status"]
+): string {
+  switch (status) {
+    case "REQUESTED":
+      return "Demande en attente";
+
+    case "SCHEDULED":
+      return "Planifie";
+
+    case "CONFIRMED":
+      return "Confirme";
+
+    case "CHECKED_IN":
+      return "Patient present";
+
+    case "COMPLETED":
+      return "Termine";
+
+    case "REJECTED":
+      return "Demande refusee";
+
+    case "CANCELLED":
+      return "Annule";
+
+    case "NO_SHOW":
+      return "Absent";
+  }
+}
+
+function buildAppointmentPdf(
+  appointment: Appointment
+) {
+  const doc =
+    new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a5",
+    });
+
+  doc.setFillColor(
+    17,
+    125,
+    105
+  );
+
+  doc.rect(
+    0,
+    0,
+    148,
+    34,
+    "F"
+  );
+
+  doc.setTextColor(
+    255,
+    255,
+    255
+  );
+
+  doc.setFontSize(16);
+
+  doc.text(
+    "HOSPITALIS",
+    12,
+    14
+  );
+
+  doc.setFontSize(8);
+
+  doc.text(
+    "TICKET DE RENDEZ-VOUS",
+    136,
+    14,
+    {
+      align: "right",
+    }
+  );
+
+  doc.text(
+    appointment.appointmentNumber,
+    136,
+    21,
+    {
+      align: "right",
+    }
+  );
+
+  doc.setTextColor(
+    35,
+    52,
+    68
+  );
+
+  doc.setFontSize(14);
+
+  doc.text(
+    appointment.patientName,
+    12,
+    48
+  );
+
+  autoTable(doc, {
+    startY: 56,
+
+    body: [
+      [
+        "Numero patient",
+        appointment.patientNumber,
+      ],
+
+      [
+        "Date",
+        appointment.date,
+      ],
+
+      [
+        "Heure",
+        appointment.time,
+      ],
+
+      [
+        "Duree",
+        `${appointment.durationMinutes} minutes`,
+      ],
+
+      [
+        "Service",
+        appointment.service,
+      ],
+
+      [
+        "Medecin",
+        appointment.doctorName,
+      ],
+
+      [
+        "Motif",
+        appointment.reason,
+      ],
+
+      [
+        "Statut",
+        appointmentStatusLabel(
+          appointment.status
+        ),
+      ],
+    ],
+
+    theme: "grid",
+
+    styles: {
+      fontSize: 8,
+      cellPadding: 3.5,
+    },
+
+    columnStyles: {
+      0: {
+        fontStyle: "bold",
+        cellWidth: 38,
+      },
+    },
+  });
+
+  const y =
+    getLastTableY(
+      doc,
+      100
+    ) + 10;
+
+  if (appointment.notes) {
+    doc.setFontSize(8);
+
+    doc.setTextColor(
+      90,
+      105,
+      118
+    );
+
+    doc.text(
+      `Notes : ${appointment.notes}`,
+      12,
+      y,
+      {
+        maxWidth: 124,
+      }
+    );
+  }
+
+  doc.setFontSize(7);
+
+  doc.setTextColor(
+    110,
+    120,
+    130
+  );
+
+  doc.text(
+    "Veuillez vous presenter a l'accueil avant l'heure du rendez-vous.",
+    12,
+    196
+  );
+
+  return doc;
+}
+
+export function exportAppointmentPdf(
+  appointment: Appointment
+) {
+  buildAppointmentPdf(
+    appointment
+  ).save(
+    `${appointment.appointmentNumber}.pdf`
+  );
+}
+
+export function printAppointment(
+  appointment: Appointment
+) {
+  openPdfForPrint(
+    buildAppointmentPdf(
+      appointment
     )
   );
 }
