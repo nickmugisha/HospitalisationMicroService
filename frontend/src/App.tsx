@@ -6,8 +6,12 @@ import {
 
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
+import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import ConsultationDetailPage from "./pages/ConsultationDetailPage";
+import ConsultationPage from "./pages/ConsultationPage";
 import LoginPage from "./pages/LoginPage";
+import PatientDetailPage from "./pages/PatientDetailPage";
 import ModulePage from "./pages/ModulePage";
 
 function App() {
@@ -27,12 +31,12 @@ function App() {
 
           <Route
             path="accueil"
-            element={
-              <ModulePage
-                title="Accueil"
-                description="Gestion des patients, arrivées et orientation."
-              />
-            }
+            element={<AccueilPage />}
+          />
+
+          <Route
+            path="accueil/patients/:patientId"
+            element={<PatientDetailPage />}
           />
 
           <Route
@@ -57,12 +61,12 @@ function App() {
 
           <Route
             path="consultation"
-            element={
-              <ModulePage
-                title="Consultation"
-                description="Consultations médicales, diagnostics et prescriptions."
-              />
-            }
+            element={<ConsultationPage />}
+          />
+
+          <Route
+            path="consultation/:consultationId"
+            element={<ConsultationDetailPage />}
           />
 
           <Route
