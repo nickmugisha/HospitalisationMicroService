@@ -17,9 +17,14 @@ __pycache__/
 # Logs
 *.log
 
+*.sql
+*.dump
+
 # OS
 .DS_Store
 Thumbs.db
+
+*.py[cod]
 
 # Tests/cache
 .pytest_cache/
