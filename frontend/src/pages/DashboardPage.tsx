@@ -10,11 +10,43 @@ import {
   useState,
 } from "react";
 
-import { modules } from "../config/modules";
+import {
+  modules,
+  type AppRole,
+} from "../config/modules";
+
+import {
+  useAuth,
+} from "../auth/AuthContext";
 import { getSystemHealth } from "../services/systemService";
 import type { SystemHealth } from "../types/system";
 
 export default function DashboardPage() {
+  const {
+    user,
+  } = useAuth();
+
+  const visibleModules =
+    modules.filter(
+      module =>
+        module.roles.includes(
+          "ALL"
+        ) ||
+        module.roles.some(
+          role =>
+            user?.roles.includes(
+              role as AppRole
+            )
+        )
+    );
+
+  const visibleServices =
+    visibleModules.filter(
+      module =>
+        module.id !==
+        "dashboard"
+    );
+
   const [health, setHealth] =
     useState<SystemHealth | null>(null);
 
@@ -88,7 +120,9 @@ export default function DashboardPage() {
 
           <div>
             <span>Microservices</span>
-            <strong>11</strong>
+            <strong>
+            {visibleServices.length}
+          </strong>
           </div>
         </article>
 
@@ -199,16 +233,12 @@ export default function DashboardPage() {
           </div>
 
           <span className="module-count">
-            11 services
+            {visibleServices.length} services
           </span>
         </div>
 
         <div className="module-grid">
-          {modules
-            .filter(
-              (module) =>
-                module.id !== "dashboard"
-            )
+          {visibleServices
             .map(
               (
                 { id, label, icon: Icon },

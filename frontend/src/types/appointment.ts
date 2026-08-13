@@ -1,10 +1,8 @@
 export type AppointmentStatus =
-  | "REQUESTED"
   | "SCHEDULED"
   | "CONFIRMED"
   | "CHECKED_IN"
   | "COMPLETED"
-  | "REJECTED"
   | "CANCELLED"
   | "NO_SHOW";
 
@@ -42,20 +40,12 @@ export interface Appointment {
 
   reminderSent: boolean;
 
-  createdBy:
-    | "PATIENT"
-    | "STAFF";
-
   createdAt: string;
   updatedAt: string;
 
   confirmedAt?: string;
-
   checkedInAt?: string;
   completedAt?: string;
-
-  rejectedAt?: string;
-  rejectionReason?: string;
 
   cancelledAt?: string;
   cancellationReason?: string;
@@ -72,20 +62,6 @@ export interface CreateAppointmentInput {
   time: string;
 
   durationMinutes: number;
-
-  reason: string;
-  notes: string;
-}
-
-export interface PatientAppointmentRequestInput {
-  patientId: string;
-
-  service: AppointmentService;
-
-  preferredDoctorName: string;
-
-  preferredDate: string;
-  preferredTime: string;
 
   reason: string;
   notes: string;

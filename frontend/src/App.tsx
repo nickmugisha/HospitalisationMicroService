@@ -8,6 +8,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import AccueilPage from "./pages/AccueilPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdministrationPage from "./pages/AdministrationPage";
 import AppointmentPage from "./pages/AppointmentPage";
 import MaternityDetailPage from "./pages/MaternityDetailPage";
 import MaternityPage from "./pages/MaternityPage";
@@ -20,10 +21,6 @@ import HospitalizationPage from "./pages/HospitalizationPage";
 import ConsultationDetailPage from "./pages/ConsultationDetailPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import LoginPage from "./pages/LoginPage";
-import PatientLayout from "./layouts/PatientLayout";
-import PatientDashboardPage from "./pages/PatientDashboardPage";
-import PatientAppointmentsPage from "./pages/PatientAppointmentsPage";
-import PatientComingPage from "./pages/PatientComingPage";
 
 import LaboratoryDetailPage from "./pages/LaboratoryDetailPage";
 import LaboratoryPage from "./pages/LaboratoryPage";
@@ -122,12 +119,7 @@ function App() {
 
           <Route
             path="administration"
-            element={
-              <ModulePage
-                title="Utilisateurs & notifications"
-                description="Comptes, rôles, permissions et notifications."
-              />
-            }
+            element={<AdministrationPage />}
           />
 
           <Route
@@ -152,62 +144,6 @@ function App() {
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route
-          path="patient"
-          element={<PatientLayout />}
-        >
-          <Route
-            index
-            element={<PatientDashboardPage />}
-          />
-
-          <Route
-            path="rendez-vous"
-            element={<PatientAppointmentsPage />}
-          />
-
-          <Route
-            path="resultats"
-            element={
-              <PatientComingPage
-                title="Mes résultats"
-                description="Vos résultats de laboratoire seront disponibles ici."
-              />
-            }
-          />
-
-          <Route
-            path="ordonnances"
-            element={
-              <PatientComingPage
-                title="Mes ordonnances"
-                description="Vos prescriptions et délivrances seront disponibles ici."
-              />
-            }
-          />
-
-          <Route
-            path="factures"
-            element={
-              <PatientComingPage
-                title="Mes factures"
-                description="Vos factures, paiements et reçus seront disponibles ici."
-              />
-            }
-          />
-
-          <Route
-            path="notifications"
-            element={
-              <PatientComingPage
-                title="Notifications"
-                description="Les confirmations et rappels de rendez-vous apparaîtront ici."
-              />
-            }
-          />
-        </Route>
-      </Route>
 
       <Route
         path="*"

@@ -21,7 +21,6 @@ export default function LoginPage() {
   const {
     login,
     isAuthenticated,
-    user,
   } = useAuth();
 
   const [username, setUsername] = useState("");
@@ -35,11 +34,7 @@ export default function LoginPage() {
   if (isAuthenticated) {
     return (
       <Navigate
-        to={
-          user?.roles.includes("PATIENT")
-            ? "/patient"
-            : "/"
-        }
+        to="/"
         replace
       />
     );
@@ -73,13 +68,7 @@ export default function LoginPage() {
       return;
     }
 
-    navigate(
-      authenticatedUser.roles.includes(
-        "PATIENT"
-      )
-        ? "/patient"
-        : "/"
-    );
+    navigate("/");
   }
 
   return (

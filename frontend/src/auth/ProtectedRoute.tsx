@@ -8,17 +8,24 @@ import {
   useAuth,
 } from "./AuthContext";
 
+import {
+  modules,
+  type AppRole,
+} from "../config/modules";
+
 export default function ProtectedRoute() {
   const {
     isAuthenticated,
     user,
-  } =
-    useAuth();
+  } = useAuth();
 
   const location =
     useLocation();
 
-  if (!isAuthenticated) {
+  if (
+    !isAuthenticated ||
+    !user
+  ) {
     return (
       <Navigate
         to="/login"
@@ -27,42 +34,52 @@ export default function ProtectedRoute() {
     );
   }
 
-  const isPatient =
-    user?.roles.includes(
-      "PATIENT"
-    ) ?? false;
-
-  const isPatientArea =
-    location.pathname ===
-      "/patient" ||
-    location.pathname.startsWith(
-      "/patient/"
-    );
-
-  /*
-   * Patient essayant d'entrer
-   * dans l'espace personnel/admin.
-   */
   if (
-    isPatient &&
-    !isPatientArea
+    location.pathname === "/"
   ) {
-    return (
-      <Navigate
-        to="/patient"
-        replace
-      />
-    );
+    return <Outlet />;
   }
 
-  /*
-   * Personnel essayant d'entrer
-   * dans un espace patient.
-   */
+  const matchingModule =
+    modules
+      .filter(
+        module =>
+          module.path !== "/" &&
+          (
+            location.pathname ===
+              module.path ||
+            location.pathname.startsWith(
+              `${module.path}/`
+            )
+          )
+      )
+      .sort(
+        (a, b) =>
+          b.path.length -
+          a.path.length
+      )[0];
+
+  if (!matchingModule) {
+    return <Outlet />;
+  }
+
   if (
-    !isPatient &&
-    isPatientArea
+    matchingModule.roles.includes(
+      "ALL"
+    )
   ) {
+    return <Outlet />;
+  }
+
+  const allowed =
+    matchingModule.roles.some(
+      role =>
+        user.roles.includes(
+          role as AppRole
+        )
+    );
+
+  if (!allowed) {
     return (
       <Navigate
         to="/"

@@ -5,6 +5,15 @@ import {
   type ReactNode,
 } from "react";
 
+import {
+  listHospitalUsers,
+} from "../services/administrationService";
+
+import type {
+  HospitalUser,
+  HospitalUserRole,
+} from "../types/administration";
+
 import type {
   AppRole,
 } from "../config/modules";
@@ -13,9 +22,10 @@ export interface AuthUser {
   id: string;
   fullName: string;
   username: string;
+
   roles: AppRole[];
 
-  patientNumber?: string;
+  department?: string;
 }
 
 interface AuthContextValue {
@@ -49,25 +59,87 @@ const DEMO_ADMIN:
 
   roles:
     ["ADMIN"],
+
+  department:
+    "Administration",
 };
 
-const DEMO_PATIENT:
-  AuthUser = {
-  id:
-    "demo-patient",
+function hospitalRoleToAppRoles(
+  staff: HospitalUser
+): AppRole[] {
+  const role:
+    HospitalUserRole =
+    staff.role;
 
-  fullName:
-    "kenny love",
+  switch (role) {
+    case "ADMIN":
+      return ["ADMIN"];
 
-  username:
-    "patient",
+    case "RECEPTION":
+      return [
+        "ACCUEIL",
+        "RENDEZ_VOUS",
+      ];
 
-  roles:
-    ["PATIENT"],
+    case "DOCTOR":
+      return [
+        "MEDECIN",
+      ];
 
-  patientNumber:
-    "PAT-2026-0003",
-};
+    case "NURSE":
+      return [
+        "HOSPITALISATION",
+      ];
+
+    case "LAB_TECH":
+      return [
+        "LABORATOIRE",
+      ];
+
+    case "PHARMACIST":
+      return [
+        "PHARMACIEN",
+      ];
+
+    case "BILLING":
+      return [
+        "CAISSIER",
+      ];
+
+    case "MATERNITY":
+      return [
+        "MATERNITE",
+      ];
+
+    case "MANAGER":
+      return [
+        "DIRECTION",
+      ];
+  }
+}
+
+function buildStaffAuthUser(
+  staff: HospitalUser
+): AuthUser {
+  return {
+    id:
+      staff.id,
+
+    fullName:
+      staff.fullName,
+
+    username:
+      staff.username,
+
+    roles:
+      hospitalRoleToAppRoles(
+        staff
+      ),
+
+    department:
+      staff.department,
+  };
+}
 
 export function AuthProvider({
   children,
@@ -90,9 +162,12 @@ export function AuthProvider({
         }
 
         try {
-          return JSON.parse(
-            stored
-          ) as AuthUser;
+          const parsed =
+            JSON.parse(
+              stored
+            ) as AuthUser;
+
+          return parsed;
         } catch {
           return null;
         }
@@ -122,13 +197,31 @@ export function AuthProvider({
     }
 
     if (
-      normalizedUsername ===
-        "patient" &&
+      !authenticatedUser &&
       password ===
-        "Patient123!"
+        "Hospital123!"
     ) {
-      authenticatedUser =
-        DEMO_PATIENT;
+      const staffUsers =
+        await listHospitalUsers();
+
+      const staff =
+        staffUsers.find(
+          current =>
+            current.username
+              .trim()
+              .toLowerCase() ===
+            normalizedUsername
+        );
+
+      if (
+        staff &&
+        staff.active
+      ) {
+        authenticatedUser =
+          buildStaffAuthUser(
+            staff
+          );
+      }
     }
 
     if (!authenticatedUser) {

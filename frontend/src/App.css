@@ -4233,3 +4233,207 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   ADMINISTRATION / NOTIFICATIONS
+========================================================= */
+
+.admin-tabs {
+  margin: 18px 0;
+  padding: 6px;
+  display: inline-flex;
+  gap: 6px;
+  border: 1px solid #e1e8ec;
+  border-radius: 11px;
+  background: white;
+}
+
+.admin-tabs button {
+  min-height: 39px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #687b89;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-tabs button.active {
+  background: #117d69;
+  color: white;
+}
+
+.admin-tabs button > span {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff0d0;
+  color: #936313;
+  font-size: 8px;
+}
+
+.admin-users-card {
+  overflow: hidden;
+  border: 1px solid #e1e8ed;
+  border-radius: 17px;
+  background: white;
+}
+
+.admin-role-select {
+  min-height: 35px;
+  padding: 0 8px;
+  border: 1px solid #dae3e8;
+  border-radius: 8px;
+  background: white;
+  color: #405665;
+  font-size: 9px;
+}
+
+.admin-user-status {
+  display: inline-flex;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.admin-user-status.active {
+  color: #087658;
+  background: #e7f8f1;
+}
+
+.admin-user-status.inactive {
+  color: #a64a51;
+  background: #fff0f1;
+}
+
+.admin-disable-button,
+.admin-enable-button {
+  min-height: 34px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.admin-disable-button {
+  color: #a64a51;
+  background: #fff0f1;
+}
+
+.admin-enable-button {
+  color: #087658;
+  background: #e7f8f1;
+}
+
+.admin-notification-list,
+.notification-list {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-notification-card,
+.notification-card {
+  width: 100%;
+  padding: 15px;
+  display: grid;
+  grid-template-columns:
+    42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e2e9ed;
+  border-radius: 12px;
+  background: white;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-notification-card.unread,
+.notification-card.unread {
+  border-color: #b8ded4;
+  background: #f1faf7;
+}
+
+.admin-notification-card > div,
+.notification-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #e8f6f2;
+  color: #117d69;
+}
+
+.admin-notification-card strong,
+.notification-card strong {
+  color: #2d4555;
+  font-size: 11px;
+}
+
+.admin-notification-card p,
+.notification-card p {
+  margin: 4px 0;
+  color: #73848f;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.admin-notification-card small,
+.notification-card small {
+  color: #9aa5ad;
+  font-size: 8px;
+}
+
+.notification-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #11a080;
+}
+
+.notification-summary-card {
+  margin: 18px 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns:
+    44px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dfe9e6;
+  border-radius: 13px;
+  background: white;
+}
+
+.notification-summary-card > div {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #e8f7f3;
+  color: #117d69;
+}
+
+.notification-summary-card span {
+  color: #71838f;
+  font-size: 10px;
+}
+
+.notification-summary-card strong {
+  color: #173e4b;
+  font-size: 22px;
+}

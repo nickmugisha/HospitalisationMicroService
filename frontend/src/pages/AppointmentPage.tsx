@@ -3,7 +3,6 @@ import {
   CalendarCheck2,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -26,7 +25,6 @@ import {
 } from "react";
 
 import {
-  approveAppointmentRequest,
   cancelAppointment,
   checkInAppointment,
   confirmAppointment,
@@ -34,7 +32,6 @@ import {
   listAppointments,
   markNoShow,
   markReminderSent,
-  rejectAppointmentRequest,
   updateAppointment,
 } from "../services/appointmentService";
 
@@ -122,9 +119,6 @@ function statusLabel(
   status: Appointment["status"]
 ): string {
   switch (status) {
-    case "REQUESTED":
-      return "Demande en attente";
-
     case "SCHEDULED":
       return "Planifié";
 
@@ -136,9 +130,6 @@ function statusLabel(
 
     case "COMPLETED":
       return "Terminé";
-
-    case "REJECTED":
-      return "Refusée";
 
     case "CANCELLED":
       return "Annulé";
@@ -239,30 +230,6 @@ export default function AppointmentPage() {
   const [error, setError] =
     useState("");
 
-  const [
-    reviewDoctorName,
-    setReviewDoctorName,
-  ] = useState("");
-
-  const [
-    reviewDate,
-    setReviewDate,
-  ] = useState("");
-
-  const [
-    reviewTime,
-    setReviewTime,
-  ] = useState("");
-
-  const [
-    reviewDuration,
-    setReviewDuration,
-  ] = useState(30);
-
-  const [
-    requestRejectionReason,
-    setRequestRejectionReason,
-  ] = useState("");
 
   async function refresh() {
     const [
@@ -314,36 +281,6 @@ export default function AppointmentPage() {
     refresh();
   }, []);
 
-  useEffect(() => {
-    if (
-      detailAppointment?.status !==
-      "REQUESTED"
-    ) {
-      return;
-    }
-
-    setReviewDoctorName(
-      detailAppointment.doctorName ||
-        doctors[0]
-    );
-
-    setReviewDate(
-      detailAppointment.date
-    );
-
-    setReviewTime(
-      detailAppointment.time
-    );
-
-    setReviewDuration(
-      detailAppointment.durationMinutes ||
-        30
-    );
-
-    setRequestRejectionReason("");
-  }, [
-    detailAppointment,
-  ]);
 
   const filteredAppointments =
     useMemo(() => {
@@ -374,36 +311,14 @@ export default function AppointmentPage() {
       appointments,
       search,
     ]);
-
-  const pendingRequests =
-    appointments
-      .filter(
-        appointment =>
-          appointment.status ===
-            "REQUESTED" &&
-          appointment.createdBy ===
-            "PATIENT"
-      )
-      .sort(
-        (a, b) =>
-          a.createdAt.localeCompare(
-            b.createdAt
-          )
-      );
-
   const selectedAppointments =
     filteredAppointments
       .filter(
         appointment =>
           appointment.date ===
             selectedDate &&
-          ![
-            "REQUESTED",
-            "REJECTED",
-            "CANCELLED",
-          ].includes(
-            appointment.status
-          )
+          appointment.status !==
+            "CANCELLED"
       )
       .sort(
         (a, b) =>
@@ -417,13 +332,8 @@ export default function AppointmentPage() {
       appointment =>
         appointment.date ===
           today &&
-        ![
-          "REQUESTED",
-          "REJECTED",
-          "CANCELLED",
-        ].includes(
-          appointment.status
-        )
+        appointment.status !==
+          "CANCELLED"
     );
 
   const confirmed =
@@ -446,9 +356,7 @@ export default function AppointmentPage() {
         appointment.date >=
           today &&
         ![
-          "REQUESTED",
           "COMPLETED",
-          "REJECTED",
           "CANCELLED",
           "NO_SHOW",
         ].includes(
@@ -665,85 +573,6 @@ export default function AppointmentPage() {
     }
   }
 
-  async function handleApproveRequest() {
-    if (
-      !detailAppointment ||
-      detailAppointment.status !==
-        "REQUESTED"
-    ) {
-      return;
-    }
-
-    setError("");
-
-    try {
-      const updated =
-        await approveAppointmentRequest(
-          detailAppointment.id,
-          reviewDoctorName,
-          reviewDate,
-          reviewTime,
-          reviewDuration
-        );
-
-      setDetailAppointment(
-        updated
-      );
-
-      await refresh();
-    } catch (exception) {
-      setError(
-        exception instanceof Error
-          ? exception.message
-          : "Impossible de confirmer cette demande."
-      );
-    }
-  }
-
-  async function handleRejectRequest() {
-    if (
-      !detailAppointment ||
-      detailAppointment.status !==
-        "REQUESTED"
-    ) {
-      return;
-    }
-
-    if (
-      !requestRejectionReason.trim()
-    ) {
-      setError(
-        "Veuillez préciser la raison du refus."
-      );
-
-      return;
-    }
-
-    setError("");
-
-    try {
-      const updated =
-        await rejectAppointmentRequest(
-          detailAppointment.id,
-          requestRejectionReason
-        );
-
-      setDetailAppointment(
-        updated
-      );
-
-      setRequestRejectionReason("");
-
-      await refresh();
-    } catch (exception) {
-      setError(
-        exception instanceof Error
-          ? exception.message
-          : "Impossible de refuser cette demande."
-      );
-    }
-  }
-
   function previousMonth() {
     setMonth(
       new Date(
@@ -796,21 +625,7 @@ export default function AppointmentPage() {
       </header>
 
       <section className="dashboard-stats">
-        <article>
-          <div className="stat-icon">
-            <Bell />
-          </div>
 
-          <div>
-            <span>
-              Demandes patients
-            </span>
-
-            <strong>
-              {pendingRequests.length}
-            </strong>
-          </div>
-        </article>
 
         <article>
           <div className="stat-icon">
@@ -875,125 +690,6 @@ export default function AppointmentPage() {
             </strong>
           </div>
         </article>
-      </section>
-
-      <section className="appointment-request-panel">
-        <div className="appointment-request-heading">
-          <div>
-            <span className="section-label">
-              DEMANDES PATIENTS
-            </span>
-
-            <h2>
-              Rendez-vous à valider
-            </h2>
-
-            <p>
-              Les patients ont choisi
-              un médecin et un créneau
-              souhaités. Vérifiez leur
-              disponibilité avant confirmation.
-            </p>
-          </div>
-
-          <span className="appointment-request-count">
-            {pendingRequests.length}
-          </span>
-        </div>
-
-        <div className="appointment-request-list">
-          {pendingRequests.map(
-            appointment => (
-              <article
-                className="appointment-request-card"
-                key={appointment.id}
-              >
-                <div className="appointment-request-avatar">
-                  {appointment.patientName
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-
-                <div className="appointment-request-info">
-                  <span>
-                    {
-                      appointment.appointmentNumber
-                    }
-                  </span>
-
-                  <h3>
-                    {
-                      appointment.patientName
-                    }
-                  </h3>
-
-                  <p>
-                    {
-                      appointment.service
-                    }
-                    {" • "}
-                    {
-                      appointment.reason
-                    }
-                  </p>
-                </div>
-
-                <div className="appointment-request-preference">
-                  <span>
-                    MÉDECIN SOUHAITÉ
-                  </span>
-
-                  <strong>
-                    {
-                      appointment.doctorName ||
-                      "Non précisé"
-                    }
-                  </strong>
-
-                  <small>
-                    {formatDate(
-                      appointment.date
-                    )}
-                    {" • "}
-                    {
-                      appointment.time
-                    }
-                  </small>
-                </div>
-
-                <button
-                  className="appointment-review-button"
-                  onClick={() => {
-                    setError("");
-
-                    setDetailAppointment(
-                      appointment
-                    );
-                  }}
-                >
-                  Examiner
-                </button>
-              </article>
-            )
-          )}
-
-          {pendingRequests.length === 0 && (
-            <div className="appointment-request-empty">
-              <CheckCircle2 />
-
-              <div>
-                <strong>
-                  Aucune demande en attente
-                </strong>
-
-                <span>
-                  Toutes les demandes patient
-                  ont été traitées.
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
       </section>
 
       <section className="appointment-workspace">
@@ -1784,187 +1480,6 @@ export default function AppointmentPage() {
               </div>
             )}
 
-            {detailAppointment.status ===
-              "REQUESTED" && (
-              <div className="appointment-request-review">
-                <div className="appointment-request-review-title">
-                  <div>
-                    <span className="section-label">
-                      DEMANDE DU PATIENT
-                    </span>
-
-                    <h3>
-                      Vérifier et confirmer
-                      le rendez-vous
-                    </h3>
-                  </div>
-
-                  <span className="appointment-status requested">
-                    En attente
-                  </span>
-                </div>
-
-                <div className="appointment-request-original">
-                  <span>
-                    Le patient souhaite :
-                  </span>
-
-                  <strong>
-                    {
-                      detailAppointment.doctorName
-                    }
-                  </strong>
-
-                  <small>
-                    {formatDate(
-                      detailAppointment.date
-                    )}
-                    {" à "}
-                    {
-                      detailAppointment.time
-                    }
-                  </small>
-                </div>
-
-                <div className="appointment-review-grid">
-                  <label>
-                    Médecin
-
-                    <select
-                      value={
-                        reviewDoctorName
-                      }
-                      onChange={event =>
-                        setReviewDoctorName(
-                          event.target.value
-                        )
-                      }
-                    >
-                      {doctors.map(
-                        doctor => (
-                          <option
-                            key={doctor}
-                            value={doctor}
-                          >
-                            {doctor}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-
-                  <label>
-                    Date définitive
-
-                    <input
-                      type="date"
-                      min={today}
-                      value={
-                        reviewDate
-                      }
-                      onChange={event =>
-                        setReviewDate(
-                          event.target.value
-                        )
-                      }
-                    />
-                  </label>
-
-                  <label>
-                    Heure définitive
-
-                    <input
-                      type="time"
-                      value={
-                        reviewTime
-                      }
-                      onChange={event =>
-                        setReviewTime(
-                          event.target.value
-                        )
-                      }
-                    />
-                  </label>
-
-                  <label>
-                    Durée
-
-                    <select
-                      value={
-                        reviewDuration
-                      }
-                      onChange={event =>
-                        setReviewDuration(
-                          Number(
-                            event.target.value
-                          )
-                        )
-                      }
-                    >
-                      <option value={15}>
-                        15 minutes
-                      </option>
-
-                      <option value={30}>
-                        30 minutes
-                      </option>
-
-                      <option value={45}>
-                        45 minutes
-                      </option>
-
-                      <option value={60}>
-                        1 heure
-                      </option>
-                    </select>
-                  </label>
-                </div>
-
-                <button
-                  className="appointment-approve-request"
-                  onClick={
-                    handleApproveRequest
-                  }
-                >
-                  <CheckCircle2 size={17} />
-                  Confirmer la demande
-                </button>
-
-                <div className="appointment-reject-request">
-                  <label>
-                    Si la demande doit être refusée
-
-                    <textarea
-                      value={
-                        requestRejectionReason
-                      }
-                      onChange={event =>
-                        setRequestRejectionReason(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ex. médecin indisponible, service indisponible..."
-                    />
-                  </label>
-
-                  <button
-                    onClick={
-                      handleRejectRequest
-                    }
-                  >
-                    <XCircle size={16} />
-                    Refuser la demande
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {![
-              "REQUESTED",
-              "REJECTED",
-            ].includes(
-              detailAppointment.status
-            ) && (
             <div className="appointment-document-actions">
               <button
                 className="secondary-action billing-action-button"
@@ -2013,7 +1528,6 @@ export default function AppointmentPage() {
                 </button>
               )}
             </div>
-            )}
 
             <div className="appointment-lifecycle-actions">
               {detailAppointment.status ===
@@ -2089,8 +1603,6 @@ export default function AppointmentPage() {
               )}
 
               {![
-                "REQUESTED",
-                "REJECTED",
                 "COMPLETED",
                 "CANCELLED",
               ].includes(

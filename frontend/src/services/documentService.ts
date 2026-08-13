@@ -1348,9 +1348,6 @@ function appointmentStatusLabel(
   status: Appointment["status"]
 ): string {
   switch (status) {
-    case "REQUESTED":
-      return "Demande en attente";
-
     case "SCHEDULED":
       return "Planifie";
 
@@ -1362,9 +1359,6 @@ function appointmentStatusLabel(
 
     case "COMPLETED":
       return "Termine";
-
-    case "REJECTED":
-      return "Demande refusee";
 
     case "CANCELLED":
       return "Annule";

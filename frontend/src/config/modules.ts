@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 export type AppRole =
-  | "PATIENT"
   | "ADMIN"
   | "ACCUEIL"
   | "MEDECIN"
