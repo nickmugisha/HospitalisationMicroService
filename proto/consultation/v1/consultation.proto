@@ -1,0 +1,201 @@
+syntax = "proto3";
+
+package hospital.consultation.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service ConsultationService {
+  rpc CreateConsultation(CreateConsultationRequest) returns (ConsultationResponse);
+  rpc GetConsultation(GetConsultationRequest) returns (ConsultationResponse);
+  rpc ListPatientConsultations(ListPatientConsultationsRequest) returns (ListPatientConsultationsResponse);
+  rpc UpdateClinicalNotes(UpdateClinicalNotesRequest) returns (ConsultationResponse);
+  rpc IssuePrescription(IssuePrescriptionRequest) returns (PrescriptionResponse);
+  rpc RequestLabTest(RequestLabTestRequest) returns (ExternalRequestResponse);
+  rpc RequestHospitalization(RequestHospitalizationRequest) returns (ExternalRequestResponse);
+  rpc CloseConsultation(CloseConsultationRequest) returns (ConsultationResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum ConsultationStatus {
+  CONSULTATION_STATUS_UNSPECIFIED = 0;
+  CONSULTATION_STATUS_OPEN = 1;
+  CONSULTATION_STATUS_CLOSED = 2;
+  CONSULTATION_STATUS_CANCELLED = 3;
+}
+
+enum PrescriptionStatus {
+  PRESCRIPTION_STATUS_UNSPECIFIED = 0;
+  PRESCRIPTION_STATUS_ISSUED = 1;
+  PRESCRIPTION_STATUS_CANCELLED = 2;
+}
+
+enum ExternalRequestType {
+  EXTERNAL_REQUEST_TYPE_UNSPECIFIED = 0;
+  EXTERNAL_REQUEST_TYPE_LAB_TEST = 1;
+  EXTERNAL_REQUEST_TYPE_HOSPITALIZATION = 2;
+  EXTERNAL_REQUEST_TYPE_MATERNITY = 3;
+}
+
+enum ExternalRequestStatus {
+  EXTERNAL_REQUEST_STATUS_UNSPECIFIED = 0;
+  EXTERNAL_REQUEST_STATUS_PENDING_DELIVERY = 1;
+  EXTERNAL_REQUEST_STATUS_DELIVERED = 2;
+  EXTERNAL_REQUEST_STATUS_FAILED = 3;
+}
+
+message Vitals {
+  optional double temperature_c = 1;
+  optional int32 systolic_bp = 2;
+  optional int32 diastolic_bp = 3;
+  optional int32 pulse_bpm = 4;
+  optional int32 respiratory_rate = 5;
+  optional int32 spo2_percent = 6;
+  optional double weight_kg = 7;
+  optional double height_cm = 8;
+}
+
+message Diagnosis {
+  string id = 1;
+  string text = 2;
+  string code = 3;
+  bool is_primary = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message DiagnosisInput {
+  string text = 1;
+  string code = 2;
+  bool is_primary = 3;
+}
+
+message PrescriptionItem {
+  string id = 1;
+  string medicine_ref = 2;
+  string dose = 3;
+  string frequency = 4;
+  string duration = 5;
+  string instructions = 6;
+}
+
+message PrescriptionItemInput {
+  string medicine_ref = 1;
+  string dose = 2;
+  string frequency = 3;
+  string duration = 4;
+  string instructions = 5;
+}
+
+message Prescription {
+  string id = 1;
+  string prescription_number = 2;
+  string consultation_id = 3;
+  string patient_id = 4;
+  string doctor_id = 5;
+  PrescriptionStatus status = 6;
+  repeated PrescriptionItem items = 7;
+  google.protobuf.Timestamp issued_at = 8;
+}
+
+message Consultation {
+  string id = 1;
+  string consultation_number = 2;
+  string patient_id = 3;
+  string doctor_id = 4;
+  string reason = 5;
+  string symptoms = 6;
+  string observations = 7;
+  string notes = 8;
+  Vitals vitals = 9;
+  ConsultationStatus status = 10;
+  repeated Diagnosis diagnoses = 11;
+  repeated Prescription prescriptions = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  google.protobuf.Timestamp closed_at = 15;
+}
+
+message CreateConsultationRequest {
+  string patient_id = 1;
+  string reason = 2;
+  string symptoms = 3;
+}
+
+message GetConsultationRequest {
+  string consultation_id = 1;
+}
+
+message ListPatientConsultationsRequest {
+  string patient_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListPatientConsultationsResponse {
+  repeated Consultation consultations = 1;
+  int32 total = 2;
+}
+
+message UpdateClinicalNotesRequest {
+  string consultation_id = 1;
+  optional string symptoms = 2;
+  optional string observations = 3;
+  optional string notes = 4;
+  Vitals vitals = 5;
+  repeated DiagnosisInput diagnoses = 6;
+  bool replace_diagnoses = 7;
+}
+
+message IssuePrescriptionRequest {
+  string consultation_id = 1;
+  repeated PrescriptionItemInput items = 2;
+}
+
+message RequestLabTestRequest {
+  string consultation_id = 1;
+  string test_code = 2;
+  string test_name = 3;
+  string clinical_information = 4;
+}
+
+enum HospitalizationTarget {
+  HOSPITALIZATION_TARGET_UNSPECIFIED = 0;
+  HOSPITALIZATION_TARGET_HOSPITALISATION = 1;
+  HOSPITALIZATION_TARGET_MATERNITE = 2;
+}
+
+message RequestHospitalizationRequest {
+  string consultation_id = 1;
+  string reason = 2;
+  string preferred_ward = 3;
+  HospitalizationTarget target = 4;
+}
+
+message ExternalRequest {
+  string id = 1;
+  string correlation_id = 2;
+  string consultation_id = 3;
+  string patient_id = 4;
+  ExternalRequestType request_type = 5;
+  ExternalRequestStatus status = 6;
+  string target_service = 7;
+  string summary = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message CloseConsultationRequest {
+  string consultation_id = 1;
+  string closing_notes = 2;
+}
+
+message ConsultationResponse {
+  Consultation consultation = 1;
+}
+
+message PrescriptionResponse {
+  Prescription prescription = 1;
+}
+
+message ExternalRequestResponse {
+  ExternalRequest request = 1;
+}

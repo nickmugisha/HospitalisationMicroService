@@ -1,0 +1,236 @@
+syntax = "proto3";
+
+package hospital.maternite.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service MaterniteService {
+  rpc CreateMaternityCase(CreateMaternityCaseRequest) returns (MaternityRecordResponse);
+  rpc AddPrenatalVisit(AddPrenatalVisitRequest) returns (PrenatalVisitResponse);
+  rpc AdmitForLabor(AdmitForLaborRequest) returns (MaternityRecordResponse);
+  rpc RecordLaborEvent(RecordLaborEventRequest) returns (LaborEventResponse);
+  rpc RecordDelivery(RecordDeliveryRequest) returns (DeliveryResponse);
+  rpc RegisterNewborn(RegisterNewbornRequest) returns (NewbornResponse);
+  rpc GetMaternityRecord(GetMaternityRecordRequest) returns (MaternityRecordResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum PregnancyStatus {
+  PREGNANCY_STATUS_UNSPECIFIED = 0;
+  PREGNANCY_STATUS_ACTIVE = 1;
+  PREGNANCY_STATUS_IN_LABOR = 2;
+  PREGNANCY_STATUS_DELIVERED = 3;
+  PREGNANCY_STATUS_CLOSED = 4;
+}
+
+enum RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0;
+  RISK_LEVEL_LOW = 1;
+  RISK_LEVEL_MODERATE = 2;
+  RISK_LEVEL_HIGH = 3;
+  RISK_LEVEL_CRITICAL = 4;
+}
+
+enum LaborEventType {
+  LABOR_EVENT_TYPE_UNSPECIFIED = 0;
+  LABOR_EVENT_TYPE_ADMISSION = 1;
+  LABOR_EVENT_TYPE_CERVICAL_EXAM = 2;
+  LABOR_EVENT_TYPE_CONTRACTION = 3;
+  LABOR_EVENT_TYPE_FETAL_HEART = 4;
+  LABOR_EVENT_TYPE_NOTE = 5;
+  LABOR_EVENT_TYPE_OTHER = 6;
+}
+
+enum DeliveryMode {
+  DELIVERY_MODE_UNSPECIFIED = 0;
+  DELIVERY_MODE_VAGINAL = 1;
+  DELIVERY_MODE_CESAREAN = 2;
+  DELIVERY_MODE_ASSISTED = 3;
+  DELIVERY_MODE_OTHER = 4;
+}
+
+enum DeliveryOutcome {
+  DELIVERY_OUTCOME_UNSPECIFIED = 0;
+  DELIVERY_OUTCOME_LIVE_BIRTH = 1;
+  DELIVERY_OUTCOME_STILLBIRTH = 2;
+  DELIVERY_OUTCOME_OTHER = 3;
+}
+
+enum NewbornSex {
+  NEWBORN_SEX_UNSPECIFIED = 0;
+  NEWBORN_SEX_MALE = 1;
+  NEWBORN_SEX_FEMALE = 2;
+  NEWBORN_SEX_INTERSEX = 3;
+  NEWBORN_SEX_UNKNOWN = 4;
+}
+
+enum NewbornStatus {
+  NEWBORN_STATUS_UNSPECIFIED = 0;
+  NEWBORN_STATUS_STABLE = 1;
+  NEWBORN_STATUS_OBSERVATION = 2;
+  NEWBORN_STATUS_CRITICAL = 3;
+  NEWBORN_STATUS_DECEASED = 4;
+}
+
+enum BillingChargeStatus {
+  BILLING_CHARGE_STATUS_UNSPECIFIED = 0;
+  BILLING_CHARGE_STATUS_PENDING_DELIVERY = 1;
+  BILLING_CHARGE_STATUS_DELIVERED = 2;
+  BILLING_CHARGE_STATUS_FAILED = 3;
+}
+
+message Pregnancy {
+  string id = 1;
+  string pregnancy_number = 2;
+  string patient_id = 3;
+  string consultation_id = 4;
+  int32 gravida = 5;
+  int32 para = 6;
+  string lmp_date = 7;
+  string edd = 8;
+  RiskLevel risk_level = 9;
+  string risk_factors = 10;
+  string referral_reason = 11;
+  PregnancyStatus status = 12;
+  string correlation_id = 13;
+  string created_by = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+  google.protobuf.Timestamp labor_admitted_at = 17;
+}
+
+message PrenatalVisit {
+  string id = 1;
+  string pregnancy_id = 2;
+  google.protobuf.Timestamp visit_at = 3;
+  int32 gestational_age_weeks = 4;
+  string observations = 5;
+  int32 systolic_bp = 6;
+  int32 diastolic_bp = 7;
+  double weight_kg = 8;
+  int32 fetal_heart_bpm = 9;
+  string recorded_by = 10;
+}
+
+message LaborEvent {
+  string id = 1;
+  string pregnancy_id = 2;
+  LaborEventType event_type = 3;
+  google.protobuf.Timestamp event_at = 4;
+  string description = 5;
+  double cervical_dilation_cm = 6;
+  int32 fetal_heart_bpm = 7;
+  string recorded_by = 8;
+}
+
+message Delivery {
+  string id = 1;
+  string delivery_number = 2;
+  string pregnancy_id = 3;
+  string patient_id = 4;
+  google.protobuf.Timestamp delivered_at = 5;
+  DeliveryMode mode = 6;
+  DeliveryOutcome outcome = 7;
+  string complications = 8;
+  string attendant_id = 9;
+  BillingChargeStatus billing_status = 10;
+  string billing_charge_id = 11;
+  int64 billed_amount_minor = 12;
+  string currency_code = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message Newborn {
+  string id = 1;
+  string newborn_number = 2;
+  string delivery_id = 3;
+  string mother_patient_id = 4;
+  NewbornSex sex = 5;
+  int32 weight_g = 6;
+  int32 apgar_1 = 7;
+  int32 apgar_5 = 8;
+  NewbornStatus status = 9;
+  string registered_by = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message MaternityRecord {
+  Pregnancy pregnancy = 1;
+  repeated PrenatalVisit prenatal_visits = 2;
+  repeated LaborEvent labor_events = 3;
+  Delivery delivery = 4;
+  repeated Newborn newborns = 5;
+}
+
+message CreateMaternityCaseRequest {
+  string patient_id = 1;
+  string consultation_id = 2;
+  int32 gravida = 3;
+  int32 para = 4;
+  string lmp_date = 5;
+  string edd = 6;
+  RiskLevel risk_level = 7;
+  string risk_factors = 8;
+  string referral_reason = 9;
+  string idempotency_key = 10;
+  string correlation_id = 11;
+}
+
+message AddPrenatalVisitRequest {
+  string pregnancy_id = 1;
+  google.protobuf.Timestamp visit_at = 2;
+  int32 gestational_age_weeks = 3;
+  string observations = 4;
+  int32 systolic_bp = 5;
+  int32 diastolic_bp = 6;
+  double weight_kg = 7;
+  int32 fetal_heart_bpm = 8;
+  string idempotency_key = 9;
+}
+message PrenatalVisitResponse { PrenatalVisit visit = 1; bool replayed = 2; }
+
+message AdmitForLaborRequest {
+  string pregnancy_id = 1;
+  google.protobuf.Timestamp admitted_at = 2;
+  string reason = 3;
+  string idempotency_key = 4;
+}
+
+message RecordLaborEventRequest {
+  string pregnancy_id = 1;
+  LaborEventType event_type = 2;
+  google.protobuf.Timestamp event_at = 3;
+  string description = 4;
+  double cervical_dilation_cm = 5;
+  int32 fetal_heart_bpm = 6;
+  string idempotency_key = 7;
+}
+message LaborEventResponse { LaborEvent event = 1; bool replayed = 2; }
+
+message RecordDeliveryRequest {
+  string pregnancy_id = 1;
+  google.protobuf.Timestamp delivered_at = 2;
+  DeliveryMode mode = 3;
+  DeliveryOutcome outcome = 4;
+  string complications = 5;
+  string idempotency_key = 6;
+}
+message DeliveryResponse { Delivery delivery = 1; bool replayed = 2; }
+
+message RegisterNewbornRequest {
+  string delivery_id = 1;
+  NewbornSex sex = 2;
+  int32 weight_g = 3;
+  int32 apgar_1 = 4;
+  int32 apgar_5 = 5;
+  NewbornStatus status = 6;
+  string idempotency_key = 7;
+}
+message NewbornResponse { Newborn newborn = 1; bool replayed = 2; }
+
+message GetMaternityRecordRequest {
+  string pregnancy_id = 1;
+  string patient_id = 2;
+}
+message MaternityRecordResponse { MaternityRecord record = 1; bool replayed = 2; }

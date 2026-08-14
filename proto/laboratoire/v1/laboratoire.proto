@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+package hospital.laboratoire.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service LaboratoireService {
+  rpc CreateLabOrder(CreateLabOrderRequest) returns (LabOrderResponse);
+  rpc ListPendingOrders(ListPendingOrdersRequest) returns (ListLabOrdersResponse);
+  rpc CollectSample(CollectSampleRequest) returns (LabOrderResponse);
+  rpc RecordResult(RecordResultRequest) returns (LabResultResponse);
+  rpc ValidateResult(ValidateResultRequest) returns (LabResultResponse);
+  rpc GetLabResult(GetLabResultRequest) returns (LabResultResponse);
+  rpc ListPatientLabResults(ListPatientLabResultsRequest) returns (ListLabResultsResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum LabOrderStatus {
+  LAB_ORDER_STATUS_UNSPECIFIED = 0;
+  LAB_ORDER_STATUS_ORDERED = 1;
+  LAB_ORDER_STATUS_SAMPLE_COLLECTED = 2;
+  LAB_ORDER_STATUS_IN_PROGRESS = 3;
+  LAB_ORDER_STATUS_RESULTED = 4;
+  LAB_ORDER_STATUS_VALIDATED = 5;
+  LAB_ORDER_STATUS_CANCELLED = 6;
+}
+
+enum LabPriority {
+  LAB_PRIORITY_UNSPECIFIED = 0;
+  LAB_PRIORITY_ROUTINE = 1;
+  LAB_PRIORITY_URGENT = 2;
+  LAB_PRIORITY_STAT = 3;
+}
+
+enum BillingChargeStatus {
+  BILLING_CHARGE_STATUS_UNSPECIFIED = 0;
+  BILLING_CHARGE_STATUS_NOT_CREATED = 1;
+  BILLING_CHARGE_STATUS_PENDING_DELIVERY = 2;
+  BILLING_CHARGE_STATUS_DELIVERED = 3;
+  BILLING_CHARGE_STATUS_FAILED = 4;
+}
+
+message LabTest {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string sample_type = 4;
+  int64 price_minor = 5;
+  string currency = 6;
+  bool active = 7;
+}
+
+message Sample {
+  string id = 1;
+  string sample_code = 2;
+  string order_id = 3;
+  string collected_by = 4;
+  google.protobuf.Timestamp collected_at = 5;
+  string notes = 6;
+}
+
+message ResultValue {
+  string name = 1;
+  string value = 2;
+  string unit = 3;
+  string reference_range = 4;
+  string flag = 5;
+}
+
+message LabResult {
+  string id = 1;
+  string order_id = 2;
+  string patient_id = 3;
+  string consultation_id = 4;
+  repeated ResultValue values = 5;
+  string text_result = 6;
+  string recorded_by = 7;
+  google.protobuf.Timestamp recorded_at = 8;
+  string validated_by = 9;
+  google.protobuf.Timestamp validated_at = 10;
+  int32 version = 11;
+}
+
+message LabOrder {
+  string id = 1;
+  string order_number = 2;
+  string patient_id = 3;
+  string consultation_id = 4;
+  LabTest test = 5;
+  LabPriority priority = 6;
+  string clinical_question = 7;
+  LabOrderStatus status = 8;
+  string correlation_id = 9;
+  string ordered_by = 10;
+  google.protobuf.Timestamp ordered_at = 11;
+  Sample sample = 12;
+  LabResult result = 13;
+  BillingChargeStatus billing_charge_status = 14;
+}
+
+message CreateLabOrderRequest {
+  string patient_id = 1;
+  string consultation_id = 2;
+  string test_code = 3;
+  LabPriority priority = 4;
+  string clinical_question = 5;
+  string correlation_id = 6;
+}
+
+message ListPendingOrdersRequest {
+  LabPriority priority = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListLabOrdersResponse {
+  repeated LabOrder orders = 1;
+  int32 total = 2;
+}
+
+message CollectSampleRequest {
+  string order_id = 1;
+  string notes = 2;
+}
+
+message RecordResultRequest {
+  string order_id = 1;
+  repeated ResultValue values = 2;
+  string text_result = 3;
+  string correction_reason = 4;
+}
+
+message ValidateResultRequest {
+  string order_id = 1;
+}
+
+message GetLabResultRequest {
+  string order_id = 1;
+}
+
+message ListPatientLabResultsRequest {
+  string patient_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListLabResultsResponse {
+  repeated LabResult results = 1;
+  int32 total = 2;
+}
+
+message LabOrderResponse {
+  LabOrder order = 1;
+}
+
+message LabResultResponse {
+  LabResult result = 1;
+  LabOrder order = 2;
+}

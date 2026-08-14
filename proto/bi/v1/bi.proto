@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package hospital.bi.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service BIService {
+  rpc GetDashboard(DashboardRequest) returns (DashboardResponse);
+  rpc GetHospitalStats(DashboardRequest) returns (HospitalStatsResponse);
+  rpc GetRevenueStats(DashboardRequest) returns (RevenueStatsResponse);
+  rpc GetOccupancyStats(DashboardRequest) returns (OccupancyStatsResponse);
+  rpc GetStockStats(DashboardRequest) returns (StockStatsResponse);
+  rpc GetMaternityStats(DashboardRequest) returns (MaternityStatsResponse);
+  rpc GetAppointmentStats(DashboardRequest) returns (AppointmentStatsResponse);
+  rpc GetServiceHealth(ServiceHealthRequest) returns (ServiceHealthResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum DataQuality {
+  DATA_QUALITY_UNSPECIFIED = 0;
+  DATA_QUALITY_COMPLETE = 1;
+  DATA_QUALITY_PARTIAL = 2;
+  DATA_QUALITY_UNAVAILABLE = 3;
+}
+
+enum ServiceStatus {
+  SERVICE_STATUS_UNSPECIFIED = 0;
+  SERVICE_STATUS_ONLINE = 1;
+  SERVICE_STATUS_DEGRADED = 2;
+  SERVICE_STATUS_OFFLINE = 3;
+}
+
+message DashboardRequest {
+  string date_from = 1; // YYYY-MM-DD, optional
+  string date_to = 2;   // YYYY-MM-DD, optional inclusive
+  string service = 3;   // optional filter label
+}
+
+message Metric {
+  string code = 1;
+  string label = 2;
+  int64 value = 3;
+  string unit = 4;
+  bool available = 5;
+  string source_service = 6;
+  string note = 7;
+}
+
+message ServiceHealth {
+  string service = 1;
+  string target = 2;
+  ServiceStatus status = 3;
+  int64 latency_ms = 4;
+  google.protobuf.Timestamp checked_at = 5;
+  string message = 6;
+}
+
+message DashboardResponse {
+  repeated Metric metrics = 1;
+  repeated ServiceHealth services = 2;
+  DataQuality quality = 3;
+  repeated string warnings = 4;
+  google.protobuf.Timestamp generated_at = 5;
+}
+
+message HospitalStatsResponse {
+  int64 patients = 1;
+  int64 consultations = 2;
+  int64 active_admissions = 3;
+  int64 pending_lab_orders = 4;
+  DataQuality quality = 5;
+  repeated string warnings = 6;
+}
+
+message RevenueStatsResponse {
+  int64 total_charges_minor = 1;
+  int64 total_paid_minor = 2;
+  int64 balance_minor = 3;
+  string currency_code = 4;
+  DataQuality quality = 5;
+  repeated string warnings = 6;
+}
+
+message OccupancyStatsResponse {
+  int64 total_beds = 1;
+  int64 available_beds = 2;
+  int64 occupied_beds = 3;
+  int64 out_of_service_beds = 4;
+  DataQuality quality = 5;
+  repeated string warnings = 6;
+}
+
+message StockStatsResponse {
+  int64 medicines = 1;
+  int64 total_units_available = 2;
+  int64 stock_alerts = 3;
+  DataQuality quality = 4;
+  repeated string warnings = 5;
+}
+
+message MaternityStatsResponse {
+  int64 maternity_records = 1;
+  int64 in_labor = 2;
+  int64 delivered = 3;
+  int64 newborns = 4;
+  DataQuality quality = 5;
+  repeated string warnings = 6;
+}
+
+message AppointmentStatsResponse {
+  int64 appointments = 1;
+  int64 booked = 2;
+  int64 confirmed = 3;
+  int64 checked_in = 4;
+  int64 completed = 5;
+  int64 cancelled = 6;
+  int64 no_show = 7;
+  DataQuality quality = 8;
+  repeated string warnings = 9;
+}
+
+message ServiceHealthRequest {
+  bool include_offline = 1;
+}
+message ServiceHealthResponse {
+  repeated ServiceHealth services = 1;
+  DataQuality quality = 2;
+  repeated string warnings = 3;
+  google.protobuf.Timestamp checked_at = 4;
+}

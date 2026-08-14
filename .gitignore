@@ -34,3 +34,18 @@ htmlcov/
 # Temporary
 *.tmp
 *.bak
+.run/
+
+
+$ignoreLines = @(
+    ".run/",
+    "LOT_*_ENV_APPEND.txt"
+)
+
+foreach ($line in $ignoreLines) {
+    if (-not (Select-String -Path ".gitignore" -SimpleMatch $line -Quiet -ErrorAction SilentlyContinue)) {
+        Add-Content ".gitignore" $line
+    }
+}
+.run/
+LOT_*_ENV_APPEND.txt

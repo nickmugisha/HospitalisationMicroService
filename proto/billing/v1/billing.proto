@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package hospital.billing.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service BillingService {
+  rpc CreateCharge(CreateChargeRequest) returns (CreateChargeResponse);
+  rpc GetPatientBalance(GetPatientBalanceRequest) returns (GetPatientBalanceResponse);
+  rpc GetInvoice(GetInvoiceRequest) returns (InvoiceResponse);
+  rpc RecordPayment(RecordPaymentRequest) returns (PaymentResponse);
+  rpc ReversePayment(ReversePaymentRequest) returns (ReversePaymentResponse);
+  rpc GetPaymentStatus(GetPaymentStatusRequest) returns (PaymentStatusResponse);
+  rpc GetReceipt(GetReceiptRequest) returns (ReceiptResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum ChargeStatus {
+  CHARGE_STATUS_UNSPECIFIED = 0;
+  CHARGE_STATUS_ACTIVE = 1;
+}
+
+enum InvoiceStatus {
+  INVOICE_STATUS_UNSPECIFIED = 0;
+  INVOICE_STATUS_OPEN = 1;
+  INVOICE_STATUS_PARTIALLY_PAID = 2;
+  INVOICE_STATUS_PAID = 3;
+}
+
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_CASH = 1;
+  PAYMENT_METHOD_CARD = 2;
+  PAYMENT_METHOD_MOBILE_MONEY = 3;
+  PAYMENT_METHOD_BANK_TRANSFER = 4;
+  PAYMENT_METHOD_OTHER = 5;
+}
+
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_VALIDATED = 1;
+  PAYMENT_STATUS_REVERSED = 2;
+}
+
+message Charge {
+  string id = 1;
+  string charge_number = 2;
+  string source_type = 3;
+  string source_id = 4;
+  string patient_id = 5;
+  string invoice_id = 6;
+  hospital.common.v1.Money amount = 7;
+  string description = 8;
+  ChargeStatus status = 9;
+  string correlation_id = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message Invoice {
+  string id = 1;
+  string invoice_number = 2;
+  string patient_id = 3;
+  hospital.common.v1.Money total = 4;
+  hospital.common.v1.Money paid = 5;
+  hospital.common.v1.Money balance = 6;
+  InvoiceStatus status = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message Payment {
+  string id = 1;
+  string payment_number = 2;
+  string invoice_id = 3;
+  string patient_id = 4;
+  hospital.common.v1.Money amount = 5;
+  PaymentMethod method = 6;
+  string cashier_id = 7;
+  string reference = 8;
+  PaymentStatus status = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message Receipt {
+  string id = 1;
+  string receipt_number = 2;
+  string payment_id = 3;
+  string invoice_id = 4;
+  hospital.common.v1.Money amount = 5;
+  google.protobuf.Timestamp issued_at = 6;
+}
+
+message Reversal {
+  string id = 1;
+  string reversal_number = 2;
+  string payment_id = 3;
+  string invoice_id = 4;
+  hospital.common.v1.Money amount = 5;
+  string reason = 6;
+  string actor_id = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message CreateChargeRequest {
+  string source_type = 1;
+  string source_id = 2;
+  string patient_id = 3;
+  int64 amount_minor = 4;
+  string currency_code = 5;
+  string description = 6;
+  string idempotency_key = 7;
+  string correlation_id = 8;
+}
+
+message CreateChargeResponse {
+  Charge charge = 1;
+  Invoice invoice = 2;
+  bool replayed = 3;
+}
+
+message GetPatientBalanceRequest { string patient_id = 1; }
+
+message GetPatientBalanceResponse {
+  string patient_id = 1;
+  hospital.common.v1.Money total_charges = 2;
+  hospital.common.v1.Money total_paid = 3;
+  hospital.common.v1.Money balance = 4;
+  Invoice invoice = 5;
+}
+
+message GetInvoiceRequest {
+  string invoice_id = 1;
+  string invoice_number = 2;
+  string patient_id = 3;
+}
+
+message InvoiceResponse {
+  Invoice invoice = 1;
+  repeated Charge charges = 2;
+  repeated Payment payments = 3;
+}
+
+message RecordPaymentRequest {
+  string invoice_id = 1;
+  int64 amount_minor = 2;
+  string currency_code = 3;
+  PaymentMethod method = 4;
+  string reference = 5;
+  string idempotency_key = 6;
+}
+
+message PaymentResponse {
+  Payment payment = 1;
+  Receipt receipt = 2;
+  Invoice invoice = 3;
+  bool replayed = 4;
+}
+
+message ReversePaymentRequest {
+  string payment_id = 1;
+  string reason = 2;
+  string idempotency_key = 3;
+}
+
+message ReversePaymentResponse {
+  Reversal reversal = 1;
+  Payment payment = 2;
+  Invoice invoice = 3;
+  bool replayed = 4;
+}
+
+message GetPaymentStatusRequest { string payment_id = 1; }
+
+message PaymentStatusResponse {
+  Payment payment = 1;
+  bool reversed = 2;
+  Reversal reversal = 3;
+}
+
+message GetReceiptRequest {
+  string receipt_id = 1;
+  string receipt_number = 2;
+  string payment_id = 3;
+}
+
+message ReceiptResponse { Receipt receipt = 1; }

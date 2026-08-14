@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package hospital.hospitalisation.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service HospitalisationService {
+  rpc GetBedAvailability(GetBedAvailabilityRequest) returns (GetBedAvailabilityResponse);
+  rpc CreateAdmission(CreateAdmissionRequest) returns (AdmissionResponse);
+  rpc AssignBed(AssignBedRequest) returns (AdmissionResponse);
+  rpc TransferBed(TransferBedRequest) returns (TransferResponse);
+  rpc GetCurrentAdmission(GetCurrentAdmissionRequest) returns (AdmissionResponse);
+  rpc AddStayNote(AddStayNoteRequest) returns (StayNoteResponse);
+  rpc DischargePatient(DischargePatientRequest) returns (AdmissionResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum BedStatus {
+  BED_STATUS_UNSPECIFIED = 0;
+  BED_STATUS_AVAILABLE = 1;
+  BED_STATUS_OCCUPIED = 2;
+  BED_STATUS_OUT_OF_SERVICE = 3;
+}
+
+enum AdmissionStatus {
+  ADMISSION_STATUS_UNSPECIFIED = 0;
+  ADMISSION_STATUS_PENDING = 1;
+  ADMISSION_STATUS_ADMITTED = 2;
+  ADMISSION_STATUS_DISCHARGED = 3;
+  ADMISSION_STATUS_CANCELLED = 4;
+}
+
+enum BillingChargeStatus {
+  BILLING_CHARGE_STATUS_UNSPECIFIED = 0;
+  BILLING_CHARGE_STATUS_NOT_CREATED = 1;
+  BILLING_CHARGE_STATUS_PENDING_DELIVERY = 2;
+  BILLING_CHARGE_STATUS_DELIVERED = 3;
+  BILLING_CHARGE_STATUS_FAILED = 4;
+}
+
+message Ward {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  bool active = 4;
+  int64 daily_rate_minor = 5;
+  string currency = 6;
+}
+
+message Room {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  Ward ward = 4;
+}
+
+message Bed {
+  string id = 1;
+  string code = 2;
+  Room room = 3;
+  BedStatus status = 4;
+}
+
+message GetBedAvailabilityRequest {
+  string ward_code = 1;
+  bool available_only = 2;
+}
+
+message GetBedAvailabilityResponse {
+  repeated Bed beds = 1;
+  int32 total = 2;
+  int32 available = 3;
+  int32 occupied = 4;
+  int32 out_of_service = 5;
+}
+
+message CreateAdmissionRequest {
+  string patient_id = 1;
+  string consultation_id = 2;
+  string reason = 3;
+  string preferred_ward = 4;
+  string correlation_id = 5;
+  string idempotency_key = 6;
+}
+
+message Admission {
+  string id = 1;
+  string admission_number = 2;
+  string patient_id = 3;
+  string consultation_id = 4;
+  string reason = 5;
+  string preferred_ward = 6;
+  AdmissionStatus status = 7;
+  Bed current_bed = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp admitted_at = 10;
+  google.protobuf.Timestamp discharged_at = 11;
+  string discharge_summary = 12;
+  string created_by = 13;
+  BillingChargeStatus billing_charge_status = 14;
+  string correlation_id = 15;
+}
+
+message AdmissionResponse { Admission admission = 1; }
+
+message AssignBedRequest {
+  string admission_id = 1;
+  string bed_id = 2;
+  string idempotency_key = 3;
+}
+
+message TransferBedRequest {
+  string admission_id = 1;
+  string to_bed_id = 2;
+  string idempotency_key = 3;
+}
+
+message Transfer {
+  string id = 1;
+  string admission_id = 2;
+  string from_bed_id = 3;
+  string to_bed_id = 4;
+  google.protobuf.Timestamp requested_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  string actor_id = 7;
+}
+
+message TransferResponse {
+  Admission admission = 1;
+  Transfer transfer = 2;
+}
+
+message GetCurrentAdmissionRequest { string patient_id = 1; }
+
+message AddStayNoteRequest {
+  string admission_id = 1;
+  string note = 2;
+}
+
+message StayNote {
+  string id = 1;
+  string admission_id = 2;
+  string note = 3;
+  string actor_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message StayNoteResponse { StayNote note = 1; }
+
+message DischargePatientRequest {
+  string admission_id = 1;
+  string discharge_summary = 2;
+  string idempotency_key = 3;
+}

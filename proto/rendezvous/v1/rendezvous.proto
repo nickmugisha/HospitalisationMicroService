@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package hospital.rendezvous.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service RendezvousService {
+  rpc CreateScheduleSlot(CreateScheduleSlotRequest) returns (ScheduleSlotResponse);
+  rpc ListAvailableSlots(ListAvailableSlotsRequest) returns (ListAvailableSlotsResponse);
+  rpc CreateAppointment(CreateAppointmentRequest) returns (CreateAppointmentResponse);
+  rpc GetAppointment(GetAppointmentRequest) returns (AppointmentResponse);
+  rpc ListAgenda(ListAgendaRequest) returns (ListAgendaResponse);
+  rpc ConfirmAppointment(ConfirmAppointmentRequest) returns (AppointmentResponse);
+  rpc RescheduleAppointment(RescheduleAppointmentRequest) returns (AppointmentResponse);
+  rpc CancelAppointment(CancelAppointmentRequest) returns (AppointmentResponse);
+  rpc MarkCheckedIn(MarkCheckedInRequest) returns (AppointmentResponse);
+  rpc CompleteAppointment(CompleteAppointmentRequest) returns (AppointmentResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum ScheduleSlotStatus {
+  SCHEDULE_SLOT_STATUS_UNSPECIFIED = 0;
+  SCHEDULE_SLOT_STATUS_AVAILABLE = 1;
+  SCHEDULE_SLOT_STATUS_BOOKED = 2;
+  SCHEDULE_SLOT_STATUS_BLOCKED = 3;
+}
+
+enum AppointmentStatus {
+  APPOINTMENT_STATUS_UNSPECIFIED = 0;
+  APPOINTMENT_STATUS_BOOKED = 1;
+  APPOINTMENT_STATUS_CONFIRMED = 2;
+  APPOINTMENT_STATUS_CHECKED_IN = 3;
+  APPOINTMENT_STATUS_COMPLETED = 4;
+  APPOINTMENT_STATUS_CANCELLED = 5;
+  APPOINTMENT_STATUS_NO_SHOW = 6;
+}
+
+enum ReminderStatus {
+  REMINDER_STATUS_UNSPECIFIED = 0;
+  REMINDER_STATUS_NOT_REQUESTED = 1;
+  REMINDER_STATUS_PENDING = 2;
+  REMINDER_STATUS_SENT = 3;
+  REMINDER_STATUS_FAILED = 4;
+}
+
+message ScheduleSlot {
+  string id = 1;
+  string provider_id = 2;
+  string service = 3;
+  google.protobuf.Timestamp start_at = 4;
+  google.protobuf.Timestamp end_at = 5;
+  ScheduleSlotStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message Appointment {
+  string id = 1;
+  string appointment_number = 2;
+  string patient_id = 3;
+  string provider_id = 4;
+  string service = 5;
+  string reason = 6;
+  AppointmentStatus status = 7;
+  ScheduleSlot slot = 8;
+  string cancellation_reason = 9;
+  string arrival_id = 10;
+  ReminderStatus reminder_status = 11;
+  string reminder_recipient_user_id = 12;
+  string correlation_id = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+  google.protobuf.Timestamp checked_in_at = 16;
+  google.protobuf.Timestamp completed_at = 17;
+}
+
+message CreateScheduleSlotRequest {
+  string provider_id = 1;
+  string service = 2;
+  google.protobuf.Timestamp start_at = 3;
+  google.protobuf.Timestamp end_at = 4;
+  string idempotency_key = 5;
+}
+message ScheduleSlotResponse { ScheduleSlot slot = 1; }
+
+message ListAvailableSlotsRequest {
+  string provider_id = 1;
+  string service = 2;
+  google.protobuf.Timestamp from_at = 3;
+  google.protobuf.Timestamp to_at = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+message ListAvailableSlotsResponse {
+  repeated ScheduleSlot slots = 1;
+  int32 total = 2;
+}
+
+message CreateAppointmentRequest {
+  string patient_id = 1;
+  string slot_id = 2;
+  string reason = 3;
+  string idempotency_key = 4;
+  string correlation_id = 5;
+  bool request_reminder = 6;
+  string reminder_recipient_user_id = 7;
+}
+message CreateAppointmentResponse {
+  Appointment appointment = 1;
+  bool replayed = 2;
+}
+
+message GetAppointmentRequest {
+  string appointment_id = 1;
+  string appointment_number = 2;
+}
+message AppointmentResponse { Appointment appointment = 1; }
+
+message ListAgendaRequest {
+  string provider_id = 1;
+  string service = 2;
+  google.protobuf.Timestamp from_at = 3;
+  google.protobuf.Timestamp to_at = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+message ListAgendaResponse {
+  repeated Appointment appointments = 1;
+  int32 total = 2;
+}
+
+message ConfirmAppointmentRequest { string appointment_id = 1; }
+message RescheduleAppointmentRequest {
+  string appointment_id = 1;
+  string new_slot_id = 2;
+  string reason = 3;
+  string idempotency_key = 4;
+}
+message CancelAppointmentRequest {
+  string appointment_id = 1;
+  string reason = 2;
+  string idempotency_key = 3;
+}
+message MarkCheckedInRequest {
+  string appointment_id = 1;
+  string idempotency_key = 2;
+}
+message CompleteAppointmentRequest { string appointment_id = 1; }

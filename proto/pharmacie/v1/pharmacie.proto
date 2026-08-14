@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package hospital.pharmacie.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service PharmacieService {
+  rpc SearchMedicines(SearchMedicinesRequest) returns (ListMedicinesResponse);
+  rpc GetStock(GetStockRequest) returns (StockResponse);
+  rpc RegisterStockEntry(RegisterStockEntryRequest) returns (StockResponse);
+  rpc ExposePrescription(ExposePrescriptionRequest) returns (PrescriptionInboxResponse);
+  rpc DispensePrescription(DispensePrescriptionRequest) returns (DispensationResponse);
+  rpc ListStockAlerts(ListStockAlertsRequest) returns (ListStockAlertsResponse);
+  rpc CreatePurchaseOrder(CreatePurchaseOrderRequest) returns (PurchaseOrderResponse);
+  rpc ReceivePurchaseOrder(ReceivePurchaseOrderRequest) returns (PurchaseOrderResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum StockAlertType {
+  STOCK_ALERT_TYPE_UNSPECIFIED = 0;
+  STOCK_ALERT_TYPE_OUT_OF_STOCK = 1;
+  STOCK_ALERT_TYPE_LOW_STOCK = 2;
+  STOCK_ALERT_TYPE_EXPIRING = 3;
+  STOCK_ALERT_TYPE_EXPIRED = 4;
+}
+
+enum PrescriptionInboxStatus {
+  PRESCRIPTION_INBOX_STATUS_UNSPECIFIED = 0;
+  PRESCRIPTION_INBOX_STATUS_ISSUED = 1;
+  PRESCRIPTION_INBOX_STATUS_PARTIAL = 2;
+  PRESCRIPTION_INBOX_STATUS_COMPLETED = 3;
+  PRESCRIPTION_INBOX_STATUS_CANCELLED = 4;
+}
+
+enum DispensationStatus {
+  DISPENSATION_STATUS_UNSPECIFIED = 0;
+  DISPENSATION_STATUS_PARTIAL = 1;
+  DISPENSATION_STATUS_COMPLETED = 2;
+}
+
+enum BillingChargeStatus {
+  BILLING_CHARGE_STATUS_UNSPECIFIED = 0;
+  BILLING_CHARGE_STATUS_NOT_CREATED = 1;
+  BILLING_CHARGE_STATUS_PENDING_DELIVERY = 2;
+  BILLING_CHARGE_STATUS_DELIVERED = 3;
+  BILLING_CHARGE_STATUS_FAILED = 4;
+}
+
+enum PurchaseOrderStatus {
+  PURCHASE_ORDER_STATUS_UNSPECIFIED = 0;
+  PURCHASE_ORDER_STATUS_ORDERED = 1;
+  PURCHASE_ORDER_STATUS_PARTIALLY_RECEIVED = 2;
+  PURCHASE_ORDER_STATUS_RECEIVED = 3;
+  PURCHASE_ORDER_STATUS_CANCELLED = 4;
+}
+
+message Medicine {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string form = 4;
+  string strength = 5;
+  string unit = 6;
+  int64 sale_price_minor = 7;
+  string currency = 8;
+  int64 reorder_level = 9;
+  bool active = 10;
+}
+
+message Batch {
+  string id = 1;
+  string batch_number = 2;
+  string medicine_id = 3;
+  string expiry_date = 4;
+  int64 quantity_available = 5;
+}
+
+message StockSummary {
+  Medicine medicine = 1;
+  int64 total_available = 2;
+  repeated Batch batches = 3;
+}
+
+message SearchMedicinesRequest {
+  string query = 1;
+  bool active_only = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListMedicinesResponse {
+  repeated Medicine medicines = 1;
+  int32 total = 2;
+}
+
+message GetStockRequest {
+  string medicine_ref = 1;
+}
+
+message StockResponse {
+  StockSummary stock = 1;
+}
+
+message RegisterStockEntryRequest {
+  string medicine_code = 1;
+  string batch_number = 2;
+  string expiry_date = 3;
+  int64 quantity = 4;
+  string reference = 5;
+}
+
+message PrescriptionLine {
+  string medicine_ref = 1;
+  string dose = 2;
+  string frequency = 3;
+  string duration = 4;
+  string instructions = 5;
+}
+
+message ExposePrescriptionRequest {
+  string prescription_id = 1;
+  string prescription_number = 2;
+  string consultation_id = 3;
+  string patient_id = 4;
+  string doctor_id = 5;
+  repeated PrescriptionLine items = 6;
+  string correlation_id = 7;
+}
+
+message PrescriptionInbox {
+  string prescription_id = 1;
+  string prescription_number = 2;
+  string consultation_id = 3;
+  string patient_id = 4;
+  string doctor_id = 5;
+  repeated PrescriptionLine items = 6;
+  PrescriptionInboxStatus status = 7;
+  string correlation_id = 8;
+  google.protobuf.Timestamp exposed_at = 9;
+}
+
+message PrescriptionInboxResponse {
+  PrescriptionInbox prescription = 1;
+}
+
+message DispenseItemInput {
+  string medicine_ref = 1;
+  int64 quantity = 2;
+}
+
+message DispensePrescriptionRequest {
+  string prescription_id = 1;
+  repeated DispenseItemInput items = 2;
+  string idempotency_key = 3;
+}
+
+message BatchAllocation {
+  string batch_id = 1;
+  string batch_number = 2;
+  int64 quantity = 3;
+  string expiry_date = 4;
+}
+
+message DispensedItem {
+  string medicine_id = 1;
+  string medicine_code = 2;
+  string medicine_name = 3;
+  int64 quantity = 4;
+  int64 unit_price_minor = 5;
+  int64 line_total_minor = 6;
+  repeated BatchAllocation allocations = 7;
+}
+
+message Dispensation {
+  string id = 1;
+  string dispensation_number = 2;
+  string prescription_id = 3;
+  string patient_id = 4;
+  DispensationStatus status = 5;
+  repeated DispensedItem items = 6;
+  int64 amount_minor = 7;
+  string currency = 8;
+  BillingChargeStatus billing_charge_status = 9;
+  string actor_id = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message DispensationResponse {
+  Dispensation dispensation = 1;
+  PrescriptionInbox prescription = 2;
+}
+
+message StockAlert {
+  StockAlertType type = 1;
+  string medicine_id = 2;
+  string medicine_code = 3;
+  string medicine_name = 4;
+  string batch_id = 5;
+  string batch_number = 6;
+  int64 quantity = 7;
+  string expiry_date = 8;
+  string message = 9;
+}
+
+message ListStockAlertsRequest {
+  int32 days_to_expiry = 1;
+}
+
+message ListStockAlertsResponse {
+  repeated StockAlert alerts = 1;
+  int32 total = 2;
+}
+
+message PurchaseOrderItemInput {
+  string medicine_code = 1;
+  int64 quantity = 2;
+}
+
+message PurchaseOrderItem {
+  string id = 1;
+  Medicine medicine = 2;
+  int64 quantity_ordered = 3;
+  int64 quantity_received = 4;
+}
+
+message PurchaseOrder {
+  string id = 1;
+  string order_number = 2;
+  string supplier_code = 3;
+  string supplier_name = 4;
+  PurchaseOrderStatus status = 5;
+  repeated PurchaseOrderItem items = 6;
+  string created_by = 7;
+  google.protobuf.Timestamp ordered_at = 8;
+  google.protobuf.Timestamp received_at = 9;
+}
+
+message CreatePurchaseOrderRequest {
+  string supplier_code = 1;
+  repeated PurchaseOrderItemInput items = 2;
+  string idempotency_key = 3;
+}
+
+message PurchaseReceiptItem {
+  string medicine_code = 1;
+  string batch_number = 2;
+  string expiry_date = 3;
+  int64 quantity = 4;
+}
+
+message ReceivePurchaseOrderRequest {
+  string purchase_order_id = 1;
+  repeated PurchaseReceiptItem items = 2;
+  string idempotency_key = 3;
+}
+
+message PurchaseOrderResponse {
+  PurchaseOrder purchase_order = 1;
+}
