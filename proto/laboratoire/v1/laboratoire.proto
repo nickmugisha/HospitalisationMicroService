@@ -6,6 +6,8 @@ import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
 service LaboratoireService {
+  rpc ListLabTests(ListLabTestsRequest) returns (ListLabTestsResponse);
+  rpc GetLabTest(GetLabTestRequest) returns (LabTestResponse);
   rpc CreateLabOrder(CreateLabOrderRequest) returns (LabOrderResponse);
   rpc ListPendingOrders(ListPendingOrdersRequest) returns (ListLabOrdersResponse);
   rpc CollectSample(CollectSampleRequest) returns (LabOrderResponse);
@@ -50,6 +52,20 @@ message LabTest {
   string currency = 6;
   bool active = 7;
 }
+
+
+message ListLabTestsRequest {
+  string query = 1;
+  bool active_only = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListLabTestsResponse {
+  repeated LabTest tests = 1;
+  int32 total = 2;
+}
+message GetLabTestRequest { string test_ref = 1; }
+message LabTestResponse { LabTest test = 1; }
 
 message Sample {
   string id = 1;

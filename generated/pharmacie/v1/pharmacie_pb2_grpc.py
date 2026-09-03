@@ -35,6 +35,16 @@ class PharmacieServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.CreateMedicine = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/CreateMedicine',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreateMedicineRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.FromString,
+                _registered_method=True)
+        self.UpdateMedicine = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/UpdateMedicine',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.UpdateMedicineRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.FromString,
+                _registered_method=True)
         self.SearchMedicines = channel.unary_unary(
                 '/hospital.pharmacie.v1.PharmacieService/SearchMedicines',
                 request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.SearchMedicinesRequest.SerializeToString,
@@ -55,6 +65,16 @@ class PharmacieServiceStub:
                 request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ExposePrescriptionRequest.SerializeToString,
                 response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.PrescriptionInboxResponse.FromString,
                 _registered_method=True)
+        self.ListPrescriptionInbox = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/ListPrescriptionInbox',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxResponse.FromString,
+                _registered_method=True)
+        self.GetPrescriptionInbox = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/GetPrescriptionInbox',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.GetPrescriptionInboxRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.PrescriptionInboxResponse.FromString,
+                _registered_method=True)
         self.DispensePrescription = channel.unary_unary(
                 '/hospital.pharmacie.v1.PharmacieService/DispensePrescription',
                 request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispensePrescriptionRequest.SerializeToString,
@@ -65,10 +85,40 @@ class PharmacieServiceStub:
                 request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListStockAlertsRequest.SerializeToString,
                 response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListStockAlertsResponse.FromString,
                 _registered_method=True)
+        self.DispatchStockAlertNotifications = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/DispatchStockAlertNotifications',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsResponse.FromString,
+                _registered_method=True)
+        self.CreateSupplier = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/CreateSupplier',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreateSupplierRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.FromString,
+                _registered_method=True)
+        self.UpdateSupplier = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/UpdateSupplier',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.UpdateSupplierRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.FromString,
+                _registered_method=True)
+        self.ListSuppliers = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/ListSuppliers',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersResponse.FromString,
+                _registered_method=True)
         self.CreatePurchaseOrder = channel.unary_unary(
                 '/hospital.pharmacie.v1.PharmacieService/CreatePurchaseOrder',
                 request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreatePurchaseOrderRequest.SerializeToString,
                 response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.FromString,
+                _registered_method=True)
+        self.GetPurchaseOrder = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/GetPurchaseOrder',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.GetPurchaseOrderRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.FromString,
+                _registered_method=True)
+        self.ListPurchaseOrders = channel.unary_unary(
+                '/hospital.pharmacie.v1.PharmacieService/ListPurchaseOrders',
+                request_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersRequest.SerializeToString,
+                response_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersResponse.FromString,
                 _registered_method=True)
         self.ReceivePurchaseOrder = channel.unary_unary(
                 '/hospital.pharmacie.v1.PharmacieService/ReceivePurchaseOrder',
@@ -84,6 +134,18 @@ class PharmacieServiceStub:
 
 class PharmacieServiceServicer:
     """Missing associated documentation comment in .proto file."""
+
+    def CreateMedicine(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateMedicine(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def SearchMedicines(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -109,6 +171,18 @@ class PharmacieServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListPrescriptionInbox(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPrescriptionInbox(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def DispensePrescription(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -121,7 +195,43 @@ class PharmacieServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DispatchStockAlertNotifications(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateSupplier(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateSupplier(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListSuppliers(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CreatePurchaseOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPurchaseOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPurchaseOrders(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -142,6 +252,16 @@ class PharmacieServiceServicer:
 
 def add_PharmacieServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'CreateMedicine': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateMedicine,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreateMedicineRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.SerializeToString,
+            ),
+            'UpdateMedicine': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateMedicine,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.UpdateMedicineRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.SerializeToString,
+            ),
             'SearchMedicines': grpc.unary_unary_rpc_method_handler(
                     servicer.SearchMedicines,
                     request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.SearchMedicinesRequest.FromString,
@@ -162,6 +282,16 @@ def add_PharmacieServiceServicer_to_server(servicer, server):
                     request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ExposePrescriptionRequest.FromString,
                     response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.PrescriptionInboxResponse.SerializeToString,
             ),
+            'ListPrescriptionInbox': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPrescriptionInbox,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxResponse.SerializeToString,
+            ),
+            'GetPrescriptionInbox': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPrescriptionInbox,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.GetPrescriptionInboxRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.PrescriptionInboxResponse.SerializeToString,
+            ),
             'DispensePrescription': grpc.unary_unary_rpc_method_handler(
                     servicer.DispensePrescription,
                     request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispensePrescriptionRequest.FromString,
@@ -172,10 +302,40 @@ def add_PharmacieServiceServicer_to_server(servicer, server):
                     request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListStockAlertsRequest.FromString,
                     response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListStockAlertsResponse.SerializeToString,
             ),
+            'DispatchStockAlertNotifications': grpc.unary_unary_rpc_method_handler(
+                    servicer.DispatchStockAlertNotifications,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsResponse.SerializeToString,
+            ),
+            'CreateSupplier': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateSupplier,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreateSupplierRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.SerializeToString,
+            ),
+            'UpdateSupplier': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateSupplier,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.UpdateSupplierRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.SerializeToString,
+            ),
+            'ListSuppliers': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListSuppliers,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersResponse.SerializeToString,
+            ),
             'CreatePurchaseOrder': grpc.unary_unary_rpc_method_handler(
                     servicer.CreatePurchaseOrder,
                     request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.CreatePurchaseOrderRequest.FromString,
                     response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.SerializeToString,
+            ),
+            'GetPurchaseOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPurchaseOrder,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.GetPurchaseOrderRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.SerializeToString,
+            ),
+            'ListPurchaseOrders': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPurchaseOrders,
+                    request_deserializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersRequest.FromString,
+                    response_serializer=pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersResponse.SerializeToString,
             ),
             'ReceivePurchaseOrder': grpc.unary_unary_rpc_method_handler(
                     servicer.ReceivePurchaseOrder,
@@ -197,6 +357,60 @@ def add_PharmacieServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class PharmacieService:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def CreateMedicine(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/CreateMedicine',
+            pharmacie_dot_v1_dot_pharmacie__pb2.CreateMedicineRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateMedicine(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/UpdateMedicine',
+            pharmacie_dot_v1_dot_pharmacie__pb2.UpdateMedicineRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.MedicineResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def SearchMedicines(request,
@@ -307,6 +521,60 @@ class PharmacieService:
             _registered_method=True)
 
     @staticmethod
+    def ListPrescriptionInbox(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/ListPrescriptionInbox',
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListPrescriptionInboxResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPrescriptionInbox(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/GetPrescriptionInbox',
+            pharmacie_dot_v1_dot_pharmacie__pb2.GetPrescriptionInboxRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.PrescriptionInboxResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def DispensePrescription(request,
             target,
             options=(),
@@ -361,6 +629,114 @@ class PharmacieService:
             _registered_method=True)
 
     @staticmethod
+    def DispatchStockAlertNotifications(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/DispatchStockAlertNotifications',
+            pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.DispatchStockAlertNotificationsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateSupplier(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/CreateSupplier',
+            pharmacie_dot_v1_dot_pharmacie__pb2.CreateSupplierRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateSupplier(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/UpdateSupplier',
+            pharmacie_dot_v1_dot_pharmacie__pb2.UpdateSupplierRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.SupplierResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListSuppliers(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/ListSuppliers',
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListSuppliersResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def CreatePurchaseOrder(request,
             target,
             options=(),
@@ -377,6 +753,60 @@ class PharmacieService:
             '/hospital.pharmacie.v1.PharmacieService/CreatePurchaseOrder',
             pharmacie_dot_v1_dot_pharmacie__pb2.CreatePurchaseOrderRequest.SerializeToString,
             pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPurchaseOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/GetPurchaseOrder',
+            pharmacie_dot_v1_dot_pharmacie__pb2.GetPurchaseOrderRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.PurchaseOrderResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListPurchaseOrders(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.pharmacie.v1.PharmacieService/ListPurchaseOrders',
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersRequest.SerializeToString,
+            pharmacie_dot_v1_dot_pharmacie__pb2.ListPurchaseOrdersResponse.FromString,
             options,
             channel_credentials,
             insecure,

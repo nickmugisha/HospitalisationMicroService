@@ -12,8 +12,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from billing.v1 import billing_pb2, billing_pb2_grpc
 from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat
+from services.common.notifications import send_system_notification
 from database.billing_session import BillingSessionLocal, engine
-from services.billing.config import SERVICE_VERSION
+from services.billing.config import AUTH_GRPC_TARGET, SERVICE_VERSION
 from services.billing.models import Charge, Invoice, Payment, Receipt, Reversal
 from services.billing.repository import (
     get_charge_by_idempotency,
@@ -394,6 +395,15 @@ class BillingService(billing_pb2_grpc.BillingServiceServicer):
             session.commit()
             saved = get_payment(session, payment.id)
             invoice = get_invoice(session, invoice.id)
+            recipient = request.notification_recipient_user_id.strip()
+            if recipient:
+                send_system_notification(
+                    auth_target=AUTH_GRPC_TARGET, recipient_id=recipient,
+                    notification_type="PAYMENT_RECORDED",
+                    title="Paiement enregistré / Payment recorded",
+                    body=f"Paiement / payment {saved.payment_number}: {amount} {currency}. Reçu / receipt {saved.receipt.receipt_number}.",
+                    source_service="billing",
+                )
             logger.info("rpc=RecordPayment peer=%s actor=%s payment=%s invoice=%s amount_minor=%s outcome=OK", context.peer(), actor.id, saved.id, invoice.id, amount)
             return billing_pb2.PaymentResponse(
                 payment=payment_to_proto(saved, saved.reversal),
@@ -463,6 +473,9 @@ class BillingService(billing_pb2_grpc.BillingServiceServicer):
             saved = get_reversal_by_key(session, idem)
             payment = get_payment(session, payment.id)
             invoice = get_invoice(session, invoice.id)
+            recipient=request.notification_recipient_user_id.strip()
+            if recipient:
+                send_system_notification(auth_target=AUTH_GRPC_TARGET,recipient_id=recipient,notification_type="PAYMENT_REVERSED",title="Paiement annulé / Payment reversed",body=f"Reversal {saved.reversal_number}: {saved.amount_minor} {saved.currency_code}. Motif / reason: {reason}",source_service="billing")
             logger.info("rpc=ReversePayment peer=%s actor=%s payment=%s reversal=%s outcome=OK", context.peer(), actor.id, payment.id, saved.id)
             return billing_pb2.ReversePaymentResponse(
                 reversal=reversal_to_proto(saved),

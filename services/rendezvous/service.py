@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -9,13 +9,16 @@ from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 
 from accueil.v1 import accueil_pb2, accueil_pb2_grpc
-from auth.v1 import auth_pb2, auth_pb2_grpc
 from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat
+from services.common.notifications import send_system_notification
 from rendezvous.v1 import rendezvous_pb2, rendezvous_pb2_grpc
 from database.rendezvous_session import RendezvousSessionLocal, engine
 from services.common.auth_guard import require_permission
-from services.rendezvous.config import ACCUEIL_GRPC_TARGET, AUTH_GRPC_TARGET, SERVICE_VERSION
+from services.rendezvous.config import (
+    ACCUEIL_GRPC_TARGET, AUTH_GRPC_TARGET, SERVICE_VERSION,
+    RENDEZVOUS_REMINDER_LEAD_MINUTES,
+)
 from services.rendezvous.models import Appointment, AppointmentEvent, ScheduleSlot
 from services.rendezvous.repository import (
     get_appointment, get_appointment_by_idempotency, get_appointment_by_number,
@@ -100,6 +103,7 @@ def appointment_to_proto(item: Appointment):
         correlation_id=item.correlation_id,
         created_at=to_timestamp(item.created_at), updated_at=to_timestamp(item.updated_at),
         checked_in_at=to_timestamp(item.checked_in_at), completed_at=to_timestamp(item.completed_at),
+        reminder_due_at=to_timestamp(item.reminder_due_at), reminder_sent_at=to_timestamp(item.reminder_sent_at),
     )
 
 
@@ -122,33 +126,64 @@ def validate_patient(context, patient_id: str):
         context.abort(grpc.StatusCode.UNAVAILABLE, f"Accueil service unavailable: {error.code().name}")
 
 
-def try_send_reminder(appointment: Appointment) -> tuple[str, str | None]:
-    if not appointment.reminder_requested:
-        return "NOT_REQUESTED", None
-    if not appointment.reminder_recipient_user_id:
-        return "PENDING", "No notification recipient user id supplied."
+def reminder_due_for(slot_start: datetime, lead_minutes: int | None = None) -> datetime:
+    lead = lead_minutes if lead_minutes and lead_minutes > 0 else RENDEZVOUS_REMINDER_LEAD_MINUTES
+    lead = min(max(int(lead), 5), 60 * 24 * 30)
+    due = slot_start - timedelta(minutes=lead)
+    return max(due, utc_now())
+
+
+def dispatch_due_reminders_once(limit: int = 50) -> tuple[int, int]:
+    """Best-effort timed reminder dispatch. Never mutates appointment business status."""
+    session = RendezvousSessionLocal()
+    sent = failed = 0
     try:
-        descriptor = auth_pb2.SendNotificationRequest.DESCRIPTOR
-        fields = descriptor.fields_by_name
-        kwargs = {}
-        if "recipient_id" in fields:
-            kwargs["recipient_id"] = appointment.reminder_recipient_user_id
-        elif "user_id" in fields:
-            kwargs["user_id"] = appointment.reminder_recipient_user_id
-        if "type" in fields:
-            kwargs["type"] = "APPOINTMENT_REMINDER"
-        if "title" in fields:
-            kwargs["title"] = "Rappel de rendez-vous"
-        if "body" in fields:
-            kwargs["body"] = f"Rendez-vous {appointment.appointment_number} prévu le {appointment.slot.start_at.isoformat()} UTC."
-        request = auth_pb2.SendNotificationRequest(**kwargs)
-        with grpc.insecure_channel(AUTH_GRPC_TARGET) as channel:
-            stub = auth_pb2_grpc.AuthServiceStub(channel)
-            stub.SendNotification(request, timeout=3)
-        return "SENT", None
-    except Exception as error:
-        # Reminder failure must never roll back appointment creation.
-        return "FAILED", str(error)[:500]
+        now = utc_now()
+        items = session.scalars(
+            select(Appointment)
+            .join(ScheduleSlot)
+            .where(
+                Appointment.reminder_requested.is_(True),
+                Appointment.reminder_recipient_user_id.is_not(None),
+                Appointment.reminder_status.in_(("PENDING", "FAILED")),
+                Appointment.reminder_due_at.is_not(None),
+                Appointment.reminder_due_at <= now,
+                Appointment.status.in_(("BOOKED", "CONFIRMED")),
+                ScheduleSlot.start_at > now,
+            )
+            .order_by(Appointment.reminder_due_at)
+            .limit(max(1, min(int(limit), 200)))
+        ).all()
+        for item in items:
+            _ = item.slot
+            ok = send_system_notification(
+                auth_target=AUTH_GRPC_TARGET,
+                recipient_id=item.reminder_recipient_user_id or "",
+                notification_type="APPOINTMENT_REMINDER",
+                title="Rappel de rendez-vous / Appointment reminder",
+                body=(f"Rendez-vous {item.appointment_number} / Appointment {item.appointment_number} "
+                      f"prévu le / scheduled for {item.slot.start_at.isoformat()} UTC."),
+                source_service="rendezvous",
+                correlation_id=item.correlation_id or "",
+            )
+            if ok:
+                item.reminder_status = "SENT"
+                item.reminder_sent_at = now
+                item.reminder_error = None
+                sent += 1
+            else:
+                item.reminder_status = "FAILED"
+                item.reminder_error = "Notification delivery failed; worker will retry before the appointment."
+                failed += 1
+        if items:
+            session.commit()
+        return sent, failed
+    except Exception:
+        session.rollback()
+        logger.exception("Timed appointment reminder dispatch failed")
+        return sent, failed + 1
+    finally:
+        session.close()
 
 
 def record_event(session, appointment: Appointment, actor_id: str, event_type: str,
@@ -193,6 +228,46 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
             session.rollback(); context.abort(grpc.StatusCode.ALREADY_EXISTS,"Schedule slot already exists.")
         finally: session.close()
 
+    def UpdateScheduleSlot(self, request, context):
+        actor = require_permission(context, "appointment.manage")
+        slot_id=request.slot_id.strip(); provider=request.provider_id.strip(); service=request.service.strip().upper(); reason=request.reason.strip()
+        start=from_timestamp(request.start_at, context, "start_at"); end=from_timestamp(request.end_at, context, "end_at")
+        if not slot_id or not provider or not service or not reason:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "slot_id, provider_id, service and reason are required.")
+        if end <= start:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "end_at must be after start_at.")
+        session=RendezvousSessionLocal()
+        try:
+            item=session.scalar(select(ScheduleSlot).where(ScheduleSlot.id==slot_id).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND, "Schedule slot not found.")
+            if item.status != "AVAILABLE": context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Only AVAILABLE slots can be updated.")
+            overlap=session.scalar(select(ScheduleSlot).where(
+                ScheduleSlot.id!=item.id, ScheduleSlot.provider_id==provider, ScheduleSlot.status!="BLOCKED",
+                ScheduleSlot.start_at < end, ScheduleSlot.end_at > start,
+            ).limit(1))
+            if overlap is not None: context.abort(grpc.StatusCode.ALREADY_EXISTS, "Provider already has an overlapping schedule slot.")
+            old=f"{item.provider_id}|{item.service}|{item.start_at.isoformat()}|{item.end_at.isoformat()}"
+            item.provider_id=provider; item.service=service; item.start_at=start; item.end_at=end
+            session.commit(); session.refresh(item)
+            logger.info("rpc=UpdateScheduleSlot peer=%s actor=%s slot=%s reason=%s old=%s outcome=OK",context.peer(),actor.id,item.id,reason,old)
+            return rendezvous_pb2.ScheduleSlotResponse(slot=slot_to_proto(item))
+        finally: session.close()
+
+    def BlockScheduleSlot(self, request, context):
+        actor=require_permission(context, "appointment.manage")
+        slot_id=request.slot_id.strip(); reason=request.reason.strip()
+        if not slot_id or not reason: context.abort(grpc.StatusCode.INVALID_ARGUMENT, "slot_id and reason are required.")
+        session=RendezvousSessionLocal()
+        try:
+            item=session.scalar(select(ScheduleSlot).where(ScheduleSlot.id==slot_id).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND, "Schedule slot not found.")
+            if item.status=="BOOKED": context.abort(grpc.StatusCode.FAILED_PRECONDITION, "A booked slot cannot be blocked. Cancel/reschedule the appointment first.")
+            if item.status=="BLOCKED": return rendezvous_pb2.ScheduleSlotResponse(slot=slot_to_proto(item))
+            item.status="BLOCKED"; session.commit(); session.refresh(item)
+            logger.info("rpc=BlockScheduleSlot peer=%s actor=%s slot=%s reason=%s outcome=OK",context.peer(),actor.id,item.id,reason)
+            return rendezvous_pb2.ScheduleSlotResponse(slot=slot_to_proto(item))
+        finally: session.close()
+
     def ListAvailableSlots(self, request, context):
         actor=require_permission(context,"appointment.read")
         provider=request.provider_id.strip(); service=request.service.strip().upper()
@@ -218,6 +293,8 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
         correlation=(request.correlation_id.strip() or str(uuid.uuid4()))
         if not patient_id or not slot_id or not reason or not idem:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT,"patient_id, slot_id, reason and idempotency_key are required.")
+        if request.request_reminder and not request.reminder_recipient_user_id.strip():
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"reminder_recipient_user_id is required when request_reminder=true because patient-to-Auth identity mapping is not implicit.")
         validate_patient(context, patient_id)
         session=RendezvousSessionLocal()
         try:
@@ -235,14 +312,12 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
                 reminder_requested=bool(request.request_reminder),
                 reminder_recipient_user_id=request.reminder_recipient_user_id.strip() or None,
                 reminder_status="PENDING" if request.request_reminder else "NOT_REQUESTED",
+                reminder_due_at=(reminder_due_for(slot.start_at, request.reminder_lead_minutes) if request.request_reminder else None),
             )
             slot.status="BOOKED"; session.add(item); session.flush()
             record_event(session,item,actor.id,"CREATED",to_status="BOOKED",new_slot_id=slot.id)
             session.commit(); saved=get_appointment(session,item.id)
-            status,error=try_send_reminder(saved)
-            if status != saved.reminder_status or error:
-                saved.reminder_status=status; saved.reminder_error=error; session.commit(); saved=get_appointment(session,item.id)
-            logger.info("rpc=CreateAppointment peer=%s actor=%s appointment=%s patient=%s outcome=OK",context.peer(),actor.id,saved.id,patient_id)
+            logger.info("rpc=CreateAppointment peer=%s actor=%s appointment=%s patient=%s reminder_due=%s outcome=OK",context.peer(),actor.id,saved.id,patient_id,saved.reminder_due_at)
             return rendezvous_pb2.CreateAppointmentResponse(appointment=appointment_to_proto(saved),replayed=False)
         except IntegrityError:
             session.rollback(); context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Schedule slot was booked concurrently or idempotency key already exists.")
@@ -279,6 +354,24 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
             return rendezvous_pb2.ListAgendaResponse(appointments=[appointment_to_proto(x) for x in items],total=total)
         finally: session.close()
 
+    def ListPatientAppointments(self, request, context):
+        actor=require_permission(context, "appointment.read")
+        patient_id=request.patient_id.strip(); limit=min(max(request.limit or 100,1),300); offset=max(request.offset,0)
+        if not patient_id: context.abort(grpc.StatusCode.INVALID_ARGUMENT, "patient_id is required.")
+        session=RendezvousSessionLocal()
+        try:
+            filters=[Appointment.patient_id==patient_id]
+            if request.status != rendezvous_pb2.APPOINTMENT_STATUS_UNSPECIFIED:
+                desired = next((db for db,proto in APPOINTMENT_STATUS_DB_TO_PROTO.items() if proto==request.status), None)
+                if desired is None: context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid appointment status.")
+                filters.append(Appointment.status==desired)
+            total=session.scalar(select(func.count()).select_from(Appointment).where(*filters)) or 0
+            items=session.scalars(select(Appointment).join(ScheduleSlot).where(*filters).order_by(ScheduleSlot.start_at.desc()).limit(limit).offset(offset)).all()
+            for item in items: _=item.slot
+            logger.info("rpc=ListPatientAppointments peer=%s actor=%s patient=%s count=%s outcome=OK",context.peer(),actor.id,patient_id,len(items))
+            return rendezvous_pb2.ListAgendaResponse(appointments=[appointment_to_proto(x) for x in items],total=int(total))
+        finally: session.close()
+
     def ConfirmAppointment(self, request, context):
         actor=require_permission(context,"appointment.manage")
         session=RendezvousSessionLocal()
@@ -312,6 +405,10 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
             old_id=item.slot_id
             old_slot.status="AVAILABLE"; new_slot.status="BOOKED"
             item.slot_id=new_slot.id; item.active_slot_key=new_slot.id; item.last_reschedule_key=idem; item.updated_at=utc_now()
+            if item.reminder_requested and item.reminder_recipient_user_id:
+                item.reminder_due_at=reminder_due_for(new_slot.start_at)
+                item.reminder_sent_at=None
+                item.reminder_status="PENDING"; item.reminder_error=None
             record_event(session,item,actor.id,"RESCHEDULED",from_status=item.status,to_status=item.status,old_slot_id=old_id,new_slot_id=new_slot.id,reason=reason or None)
             session.commit(); saved=get_appointment(session,item.id)
             logger.info("rpc=RescheduleAppointment peer=%s actor=%s appointment=%s outcome=OK",context.peer(),actor.id,item.id)
@@ -333,6 +430,7 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
             if item.status not in {"BOOKED","CONFIRMED"}: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Appointment can no longer be cancelled.")
             slot=get_slot(session,item.slot_id,for_update=True); old=item.status
             item.status="CANCELLED"; item.cancellation_reason=reason; item.cancel_idempotency_key=idem; item.active_slot_key=None; item.updated_at=utc_now()
+            if item.reminder_status in {"PENDING","FAILED"}: item.reminder_status="NOT_REQUESTED"; item.reminder_error=None
             if slot and slot.start_at > utc_now(): slot.status="AVAILABLE"
             record_event(session,item,actor.id,"CANCELLED",from_status=old,to_status="CANCELLED",old_slot_id=item.slot_id,reason=reason)
             session.commit(); saved=get_appointment(session,item.id)
@@ -380,6 +478,26 @@ class RendezvousService(rendezvous_pb2_grpc.RendezvousServiceServicer):
             old=item.status; item.status="COMPLETED"; item.active_slot_key=None; item.completed_at=utc_now(); item.updated_at=utc_now()
             record_event(session,item,actor.id,"COMPLETED",from_status=old,to_status="COMPLETED")
             session.commit(); saved=get_appointment(session,item.id)
+            return rendezvous_pb2.AppointmentResponse(appointment=appointment_to_proto(saved))
+        finally: session.close()
+
+    def MarkNoShow(self, request, context):
+        actor=require_permission(context, "appointment.manage")
+        appointment_id=request.appointment_id.strip(); reason=request.reason.strip()
+        if not appointment_id or not reason: context.abort(grpc.StatusCode.INVALID_ARGUMENT, "appointment_id and reason are required.")
+        session=RendezvousSessionLocal()
+        try:
+            item=session.scalar(select(Appointment).where(Appointment.id==appointment_id).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND, "Appointment not found.")
+            _=item.slot
+            if item.status=="NO_SHOW": return rendezvous_pb2.AppointmentResponse(appointment=appointment_to_proto(item))
+            if item.status not in {"BOOKED","CONFIRMED"}: context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Only BOOKED or CONFIRMED appointments can become NO_SHOW.")
+            if item.slot.end_at > utc_now(): context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Appointment cannot be marked NO_SHOW before its slot has ended.")
+            old=item.status; item.status="NO_SHOW"; item.active_slot_key=None; item.updated_at=utc_now()
+            if item.reminder_status in {"PENDING","FAILED"}: item.reminder_status="NOT_REQUESTED"; item.reminder_error=None
+            record_event(session,item,actor.id,"NO_SHOW",from_status=old,to_status="NO_SHOW",reason=reason)
+            session.commit(); saved=get_appointment(session,item.id)
+            logger.info("rpc=MarkNoShow peer=%s actor=%s appointment=%s outcome=OK",context.peer(),actor.id,item.id)
             return rendezvous_pb2.AppointmentResponse(appointment=appointment_to_proto(saved))
         finally: session.close()
 

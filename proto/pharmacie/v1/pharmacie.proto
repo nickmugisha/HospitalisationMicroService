@@ -6,13 +6,23 @@ import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
 service PharmacieService {
+  rpc CreateMedicine(CreateMedicineRequest) returns (MedicineResponse);
+  rpc UpdateMedicine(UpdateMedicineRequest) returns (MedicineResponse);
   rpc SearchMedicines(SearchMedicinesRequest) returns (ListMedicinesResponse);
   rpc GetStock(GetStockRequest) returns (StockResponse);
   rpc RegisterStockEntry(RegisterStockEntryRequest) returns (StockResponse);
   rpc ExposePrescription(ExposePrescriptionRequest) returns (PrescriptionInboxResponse);
+  rpc ListPrescriptionInbox(ListPrescriptionInboxRequest) returns (ListPrescriptionInboxResponse);
+  rpc GetPrescriptionInbox(GetPrescriptionInboxRequest) returns (PrescriptionInboxResponse);
   rpc DispensePrescription(DispensePrescriptionRequest) returns (DispensationResponse);
   rpc ListStockAlerts(ListStockAlertsRequest) returns (ListStockAlertsResponse);
+  rpc DispatchStockAlertNotifications(DispatchStockAlertNotificationsRequest) returns (DispatchStockAlertNotificationsResponse);
+  rpc CreateSupplier(CreateSupplierRequest) returns (SupplierResponse);
+  rpc UpdateSupplier(UpdateSupplierRequest) returns (SupplierResponse);
+  rpc ListSuppliers(ListSuppliersRequest) returns (ListSuppliersResponse);
   rpc CreatePurchaseOrder(CreatePurchaseOrderRequest) returns (PurchaseOrderResponse);
+  rpc GetPurchaseOrder(GetPurchaseOrderRequest) returns (PurchaseOrderResponse);
+  rpc ListPurchaseOrders(ListPurchaseOrdersRequest) returns (ListPurchaseOrdersResponse);
   rpc ReceivePurchaseOrder(ReceivePurchaseOrderRequest) returns (PurchaseOrderResponse);
   rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
 }
@@ -23,6 +33,12 @@ enum StockAlertType {
   STOCK_ALERT_TYPE_LOW_STOCK = 2;
   STOCK_ALERT_TYPE_EXPIRING = 3;
   STOCK_ALERT_TYPE_EXPIRED = 4;
+}
+
+enum PrescriptionMedicineSource {
+  PRESCRIPTION_MEDICINE_SOURCE_UNSPECIFIED = 0;
+  PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG = 1;
+  PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL = 2;
 }
 
 enum PrescriptionInboxStatus {
@@ -67,6 +83,31 @@ message Medicine {
   int64 reorder_level = 9;
   bool active = 10;
 }
+
+
+message CreateMedicineRequest {
+  string code = 1;
+  string name = 2;
+  string form = 3;
+  string strength = 4;
+  string unit = 5;
+  int64 sale_price_minor = 6;
+  string currency = 7;
+  int64 reorder_level = 8;
+  optional bool active = 9;
+}
+message UpdateMedicineRequest {
+  string medicine_ref = 1;
+  string name = 2;
+  string form = 3;
+  string strength = 4;
+  string unit = 5;
+  optional int64 sale_price_minor = 6;
+  string currency = 7;
+  optional int64 reorder_level = 8;
+  optional bool active = 9;
+}
+message MedicineResponse { Medicine medicine = 1; }
 
 message Batch {
   string id = 1;
@@ -116,6 +157,11 @@ message PrescriptionLine {
   string frequency = 3;
   string duration = 4;
   string instructions = 5;
+  PrescriptionMedicineSource medicine_source = 6;
+  string medicine_name = 7;
+  string medicine_form = 8;
+  string medicine_strength = 9;
+  bool dispensable_by_hospital = 10;
 }
 
 message ExposePrescriptionRequest {
@@ -143,6 +189,19 @@ message PrescriptionInbox {
 message PrescriptionInboxResponse {
   PrescriptionInbox prescription = 1;
 }
+
+
+message ListPrescriptionInboxRequest {
+  string patient_id = 1;
+  PrescriptionInboxStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListPrescriptionInboxResponse {
+  repeated PrescriptionInbox prescriptions = 1;
+  int32 total = 2;
+}
+message GetPrescriptionInboxRequest { string prescription_id = 1; }
 
 message DispenseItemInput {
   string medicine_ref = 1;
@@ -211,6 +270,45 @@ message ListStockAlertsResponse {
   repeated StockAlert alerts = 1;
   int32 total = 2;
 }
+message DispatchStockAlertNotificationsRequest {
+  int32 days_to_expiry = 1;
+}
+message DispatchStockAlertNotificationsResponse {
+  int32 alerts_found = 1;
+  int32 notifications_sent = 2;
+  int32 alerts_skipped_as_already_dispatched_today = 3;
+}
+
+
+message Supplier {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string phone = 4;
+  string email = 5;
+  bool active = 6;
+}
+message CreateSupplierRequest {
+  string code = 1;
+  string name = 2;
+  string phone = 3;
+  string email = 4;
+}
+message UpdateSupplierRequest {
+  string supplier_code = 1;
+  string name = 2;
+  string phone = 3;
+  string email = 4;
+  optional bool active = 5;
+}
+message SupplierResponse { Supplier supplier = 1; }
+message ListSuppliersRequest {
+  string query = 1;
+  bool active_only = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListSuppliersResponse { repeated Supplier suppliers = 1; int32 total = 2; }
 
 message PurchaseOrderItemInput {
   string medicine_code = 1;
@@ -258,3 +356,13 @@ message ReceivePurchaseOrderRequest {
 message PurchaseOrderResponse {
   PurchaseOrder purchase_order = 1;
 }
+
+
+message GetPurchaseOrderRequest { string purchase_order_id = 1; }
+message ListPurchaseOrdersRequest {
+  string supplier_code = 1;
+  PurchaseOrderStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListPurchaseOrdersResponse { repeated PurchaseOrder purchase_orders = 1; int32 total = 2; }

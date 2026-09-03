@@ -6,12 +6,26 @@ import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
 service HospitalisationService {
+  rpc ListWards(ListWardsRequest) returns (ListWardsResponse);
+  rpc CreateWard(CreateWardRequest) returns (WardResponse);
+  rpc UpdateWard(UpdateWardRequest) returns (WardResponse);
+  rpc ListRooms(ListRoomsRequest) returns (ListRoomsResponse);
+  rpc CreateRoom(CreateRoomRequest) returns (RoomResponse);
+  rpc UpdateRoom(UpdateRoomRequest) returns (RoomResponse);
+  rpc CreateBed(CreateBedRequest) returns (BedResponse);
+  rpc SetBedStatus(SetBedStatusRequest) returns (BedResponse);
   rpc GetBedAvailability(GetBedAvailabilityRequest) returns (GetBedAvailabilityResponse);
   rpc CreateAdmission(CreateAdmissionRequest) returns (AdmissionResponse);
+  rpc ApproveAdmission(ApproveAdmissionRequest) returns (AdmissionResponse);
+  rpc ListAdmissions(ListAdmissionsRequest) returns (ListAdmissionsResponse);
   rpc AssignBed(AssignBedRequest) returns (AdmissionResponse);
   rpc TransferBed(TransferBedRequest) returns (TransferResponse);
   rpc GetCurrentAdmission(GetCurrentAdmissionRequest) returns (AdmissionResponse);
   rpc AddStayNote(AddStayNoteRequest) returns (StayNoteResponse);
+  rpc ListDoctors(ListDoctorsRequest) returns (ListDoctorsResponse);
+  rpc AssignDoctor(AssignDoctorRequest) returns (AssignDoctorResponse);
+  rpc ListDoctorAssignments(ListDoctorAssignmentsRequest) returns (ListDoctorAssignmentsResponse);
+  rpc CompleteDoctorAssignment(CompleteDoctorAssignmentRequest) returns (DoctorAssignmentResponse);
   rpc DischargePatient(DischargePatientRequest) returns (AdmissionResponse);
   rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
 }
@@ -29,6 +43,13 @@ enum AdmissionStatus {
   ADMISSION_STATUS_ADMITTED = 2;
   ADMISSION_STATUS_DISCHARGED = 3;
   ADMISSION_STATUS_CANCELLED = 4;
+}
+
+enum DoctorAssignmentStatus {
+  DOCTOR_ASSIGNMENT_STATUS_UNSPECIFIED = 0;
+  DOCTOR_ASSIGNMENT_STATUS_ACTIVE = 1;
+  DOCTOR_ASSIGNMENT_STATUS_COMPLETED = 2;
+  DOCTOR_ASSIGNMENT_STATUS_CANCELLED = 3;
 }
 
 enum BillingChargeStatus {
@@ -61,6 +82,25 @@ message Bed {
   Room room = 3;
   BedStatus status = 4;
 }
+
+
+message ListWardsRequest { bool active_only = 1; }
+message ListWardsResponse { repeated Ward wards = 1; int32 total = 2; }
+message CreateWardRequest {
+  string code = 1; string name = 2; int64 daily_rate_minor = 3; string currency = 4;
+}
+message UpdateWardRequest {
+  string ward_id = 1; string name = 2; optional bool active = 3; optional int64 daily_rate_minor = 4; string currency = 5;
+}
+message WardResponse { Ward ward = 1; }
+message ListRoomsRequest { string ward_id = 1; string ward_code = 2; }
+message ListRoomsResponse { repeated Room rooms = 1; int32 total = 2; }
+message CreateRoomRequest { string ward_id = 1; string code = 2; string name = 3; }
+message UpdateRoomRequest { string room_id = 1; string name = 2; }
+message RoomResponse { Room room = 1; }
+message CreateBedRequest { string room_id = 1; string code = 2; }
+message SetBedStatusRequest { string bed_id = 1; BedStatus status = 2; string reason = 3; }
+message BedResponse { Bed bed = 1; }
 
 message GetBedAvailabilityRequest {
   string ward_code = 1;
@@ -100,9 +140,22 @@ message Admission {
   string created_by = 13;
   BillingChargeStatus billing_charge_status = 14;
   string correlation_id = 15;
+  google.protobuf.Timestamp approved_at = 16;
+  string approved_by = 17;
+  string approval_reason = 18;
 }
 
 message AdmissionResponse { Admission admission = 1; }
+
+message ApproveAdmissionRequest { string admission_id = 1; string reason = 2; }
+message ListAdmissionsRequest {
+  string patient_id = 1;
+  AdmissionStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListAdmissionsResponse { repeated Admission admissions = 1; int32 total = 2; }
+
 
 message AssignBedRequest {
   string admission_id = 1;
@@ -147,6 +200,39 @@ message StayNote {
 }
 
 message StayNoteResponse { StayNote note = 1; }
+
+
+message DoctorSummary {
+  string user_id = 1;
+  string display_name = 2;
+  string employee_number = 3;
+  string department = 4;
+  string job_title = 5;
+  int32 active_assignment_count = 6;
+  bool busy = 7;
+}
+message DoctorAssignment {
+  string id = 1;
+  string admission_id = 2;
+  string doctor_user_id = 3;
+  string assigned_by = 4;
+  DoctorAssignmentStatus status = 5;
+  google.protobuf.Timestamp assigned_at = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  string completion_note = 8;
+}
+message ListDoctorsRequest { string search = 1; bool active_only = 2; }
+message ListDoctorsResponse { repeated DoctorSummary doctors = 1; int32 total = 2; }
+message AssignDoctorRequest { string admission_id = 1; string doctor_user_id = 2; string idempotency_key = 3; }
+message AssignDoctorResponse {
+  DoctorAssignment assignment = 1; DoctorSummary doctor = 2; bool busy_warning = 3; string warning_message = 4;
+}
+message ListDoctorAssignmentsRequest {
+  string admission_id = 1; string doctor_user_id = 2; DoctorAssignmentStatus status = 3; int32 limit = 4; int32 offset = 5;
+}
+message ListDoctorAssignmentsResponse { repeated DoctorAssignment assignments = 1; int32 total = 2; }
+message CompleteDoctorAssignmentRequest { string assignment_id = 1; string note = 2; }
+message DoctorAssignmentResponse { DoctorAssignment assignment = 1; }
 
 message DischargePatientRequest {
   string admission_id = 1;

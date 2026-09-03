@@ -35,6 +35,46 @@ class HospitalisationServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.ListWards = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ListWards',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsResponse.FromString,
+                _registered_method=True)
+        self.CreateWard = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/CreateWard',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateWardRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.FromString,
+                _registered_method=True)
+        self.UpdateWard = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/UpdateWard',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateWardRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.FromString,
+                _registered_method=True)
+        self.ListRooms = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ListRooms',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsResponse.FromString,
+                _registered_method=True)
+        self.CreateRoom = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/CreateRoom',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateRoomRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.FromString,
+                _registered_method=True)
+        self.UpdateRoom = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/UpdateRoom',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateRoomRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.FromString,
+                _registered_method=True)
+        self.CreateBed = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/CreateBed',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateBedRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.FromString,
+                _registered_method=True)
+        self.SetBedStatus = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/SetBedStatus',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.SetBedStatusRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.FromString,
+                _registered_method=True)
         self.GetBedAvailability = channel.unary_unary(
                 '/hospital.hospitalisation.v1.HospitalisationService/GetBedAvailability',
                 request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.GetBedAvailabilityRequest.SerializeToString,
@@ -44,6 +84,16 @@ class HospitalisationServiceStub:
                 '/hospital.hospitalisation.v1.HospitalisationService/CreateAdmission',
                 request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateAdmissionRequest.SerializeToString,
                 response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.FromString,
+                _registered_method=True)
+        self.ApproveAdmission = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ApproveAdmission',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ApproveAdmissionRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.FromString,
+                _registered_method=True)
+        self.ListAdmissions = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ListAdmissions',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsResponse.FromString,
                 _registered_method=True)
         self.AssignBed = channel.unary_unary(
                 '/hospital.hospitalisation.v1.HospitalisationService/AssignBed',
@@ -65,6 +115,26 @@ class HospitalisationServiceStub:
                 request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AddStayNoteRequest.SerializeToString,
                 response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.StayNoteResponse.FromString,
                 _registered_method=True)
+        self.ListDoctors = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ListDoctors',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsResponse.FromString,
+                _registered_method=True)
+        self.AssignDoctor = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/AssignDoctor',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorResponse.FromString,
+                _registered_method=True)
+        self.ListDoctorAssignments = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/ListDoctorAssignments',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsResponse.FromString,
+                _registered_method=True)
+        self.CompleteDoctorAssignment = channel.unary_unary(
+                '/hospital.hospitalisation.v1.HospitalisationService/CompleteDoctorAssignment',
+                request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CompleteDoctorAssignmentRequest.SerializeToString,
+                response_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.DoctorAssignmentResponse.FromString,
+                _registered_method=True)
         self.DischargePatient = channel.unary_unary(
                 '/hospital.hospitalisation.v1.HospitalisationService/DischargePatient',
                 request_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.DischargePatientRequest.SerializeToString,
@@ -80,6 +150,54 @@ class HospitalisationServiceStub:
 class HospitalisationServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
+    def ListWards(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateWard(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateWard(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListRooms(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateRoom(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateRoom(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateBed(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetBedStatus(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetBedAvailability(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -87,6 +205,18 @@ class HospitalisationServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
     def CreateAdmission(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ApproveAdmission(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListAdmissions(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -116,6 +246,30 @@ class HospitalisationServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListDoctors(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AssignDoctor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListDoctorAssignments(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CompleteDoctorAssignment(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def DischargePatient(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -131,6 +285,46 @@ class HospitalisationServiceServicer:
 
 def add_HospitalisationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'ListWards': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListWards,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsResponse.SerializeToString,
+            ),
+            'CreateWard': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateWard,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateWardRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.SerializeToString,
+            ),
+            'UpdateWard': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateWard,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateWardRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.SerializeToString,
+            ),
+            'ListRooms': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListRooms,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsResponse.SerializeToString,
+            ),
+            'CreateRoom': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateRoom,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateRoomRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.SerializeToString,
+            ),
+            'UpdateRoom': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateRoom,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateRoomRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.SerializeToString,
+            ),
+            'CreateBed': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateBed,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateBedRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.SerializeToString,
+            ),
+            'SetBedStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetBedStatus,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.SetBedStatusRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.SerializeToString,
+            ),
             'GetBedAvailability': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBedAvailability,
                     request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.GetBedAvailabilityRequest.FromString,
@@ -140,6 +334,16 @@ def add_HospitalisationServiceServicer_to_server(servicer, server):
                     servicer.CreateAdmission,
                     request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateAdmissionRequest.FromString,
                     response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.SerializeToString,
+            ),
+            'ApproveAdmission': grpc.unary_unary_rpc_method_handler(
+                    servicer.ApproveAdmission,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ApproveAdmissionRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.SerializeToString,
+            ),
+            'ListAdmissions': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListAdmissions,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsResponse.SerializeToString,
             ),
             'AssignBed': grpc.unary_unary_rpc_method_handler(
                     servicer.AssignBed,
@@ -161,6 +365,26 @@ def add_HospitalisationServiceServicer_to_server(servicer, server):
                     request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AddStayNoteRequest.FromString,
                     response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.StayNoteResponse.SerializeToString,
             ),
+            'ListDoctors': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListDoctors,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsResponse.SerializeToString,
+            ),
+            'AssignDoctor': grpc.unary_unary_rpc_method_handler(
+                    servicer.AssignDoctor,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorResponse.SerializeToString,
+            ),
+            'ListDoctorAssignments': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListDoctorAssignments,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsResponse.SerializeToString,
+            ),
+            'CompleteDoctorAssignment': grpc.unary_unary_rpc_method_handler(
+                    servicer.CompleteDoctorAssignment,
+                    request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.CompleteDoctorAssignmentRequest.FromString,
+                    response_serializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.DoctorAssignmentResponse.SerializeToString,
+            ),
             'DischargePatient': grpc.unary_unary_rpc_method_handler(
                     servicer.DischargePatient,
                     request_deserializer=hospitalisation_dot_v1_dot_hospitalisation__pb2.DischargePatientRequest.FromString,
@@ -181,6 +405,222 @@ def add_HospitalisationServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class HospitalisationService:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def ListWards(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ListWards',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListWardsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateWard(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/CreateWard',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateWardRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateWard(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/UpdateWard',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateWardRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.WardResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListRooms(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ListRooms',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListRoomsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateRoom(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/CreateRoom',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateRoomRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateRoom(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/UpdateRoom',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.UpdateRoomRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.RoomResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateBed(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/CreateBed',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateBedRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetBedStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/SetBedStatus',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.SetBedStatusRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.BedResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def GetBedAvailability(request,
@@ -226,6 +666,60 @@ class HospitalisationService:
             '/hospital.hospitalisation.v1.HospitalisationService/CreateAdmission',
             hospitalisation_dot_v1_dot_hospitalisation__pb2.CreateAdmissionRequest.SerializeToString,
             hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ApproveAdmission(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ApproveAdmission',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ApproveAdmissionRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.AdmissionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListAdmissions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ListAdmissions',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListAdmissionsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -334,6 +828,114 @@ class HospitalisationService:
             '/hospital.hospitalisation.v1.HospitalisationService/AddStayNote',
             hospitalisation_dot_v1_dot_hospitalisation__pb2.AddStayNoteRequest.SerializeToString,
             hospitalisation_dot_v1_dot_hospitalisation__pb2.StayNoteResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListDoctors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ListDoctors',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AssignDoctor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/AssignDoctor',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.AssignDoctorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListDoctorAssignments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/ListDoctorAssignments',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.ListDoctorAssignmentsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CompleteDoctorAssignment(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.hospitalisation.v1.HospitalisationService/CompleteDoctorAssignment',
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.CompleteDoctorAssignmentRequest.SerializeToString,
+            hospitalisation_dot_v1_dot_hospitalisation__pb2.DoctorAssignmentResponse.FromString,
             options,
             channel_credentials,
             insecure,

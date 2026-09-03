@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py[cod]
 
 # Environment / secrets
 .env
@@ -14,19 +15,17 @@ __pycache__/
 .idea/
 .vscode/
 
-# Logs
+# Runtime / logs
 *.log
+.run/
+LOT_*_ENV_APPEND.txt
 
+# Database dumps / private backups
 *.sql
 *.dump
+backups/
 
-# OS
-.DS_Store
-Thumbs.db
-
-*.py[cod]
-
-# Tests/cache
+# Tests / coverage
 .pytest_cache/
 .coverage
 htmlcov/
@@ -34,18 +33,7 @@ htmlcov/
 # Temporary
 *.tmp
 *.bak
-.run/
 
-
-$ignoreLines = @(
-    ".run/",
-    "LOT_*_ENV_APPEND.txt"
-)
-
-foreach ($line in $ignoreLines) {
-    if (-not (Select-String -Path ".gitignore" -SimpleMatch $line -Quiet -ErrorAction SilentlyContinue)) {
-        Add-Content ".gitignore" $line
-    }
-}
-.run/
-LOT_*_ENV_APPEND.txt
+# OS
+.DS_Store
+Thumbs.db

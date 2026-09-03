@@ -26,43 +26,53 @@ from common.v1 import common_pb2 as common_dot_v1_dot_common__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18\x63hatbot/v1/chatbot.proto\x12\x13hospital.chatbot.v1\x1a\x16\x63ommon/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8a\x01\n\x0b\x43hatSession\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12.\n\nstarted_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x9e\x01\n\x0b\x43hatMessage\x12\n\n\x02id\x18\x01 \x01(\t\x12\x12\n\nsession_id\x18\x02 \x01(\t\x12.\n\x04role\x18\x03 \x01(\x0e\x32 .hospital.chatbot.v1.MessageRole\x12\x0f\n\x07\x63ontent\x18\x04 \x01(\t\x12.\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x90\x01\n\x06Source\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0b\n\x03rpc\x18\x02 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\x12\x0f\n\x07success\x18\x04 \x01(\x08\x12\x0f\n\x07message\x18\x05 \x01(\t\x12.\n\nchecked_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"`\n\nCapability\x12\x0e\n\x06intent\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x1b\n\x13required_permission\x18\x03 \x01(\t\x12\x10\n\x08\x65xamples\x18\x04 \x03(\t\"0\n\x13StartSessionRequest\x12\x19\n\x11\x63lient_request_id\x18\x01 \x01(\t\"D\n\x0fSessionResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\"S\n\x13\x41skAssistantRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x10\n\x08question\x18\x02 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\"\xe5\x01\n\x14\x41skAssistantResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\x12\x38\n\x0e\x61nswer_message\x18\x02 \x01(\x0b\x32 .hospital.chatbot.v1.ChatMessage\x12\x0e\n\x06\x61nswer\x18\x03 \x01(\t\x12\x0e\n\x06intent\x18\x04 \x01(\t\x12\x12\n\nconfidence\x18\x05 \x01(\x01\x12,\n\x07sources\x18\x06 \x03(\x0b\x32\x1b.hospital.chatbot.v1.Source\"K\n\x16GetConversationRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x0e\n\x06offset\x18\x03 \x01(\x05\"\x8f\x01\n\x17GetConversationResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\x12\x32\n\x08messages\x18\x02 \x03(\x0b\x32 .hospital.chatbot.v1.ChatMessage\x12\r\n\x05total\x18\x03 \x01(\x05\")\n\x13\x43learSessionRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"`\n\x14\x43learSessionResponse\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x18\n\x10\x64\x65leted_messages\x18\x02 \x01(\x05\x12\x1a\n\x12\x64\x65leted_tool_calls\x18\x03 \x01(\x05\"\x18\n\x16GetCapabilitiesRequest\"P\n\x17GetCapabilitiesResponse\x12\x35\n\x0c\x63\x61pabilities\x18\x01 \x03(\x0b\x32\x1f.hospital.chatbot.v1.Capability*^\n\x0bMessageRole\x12\x1c\n\x18MESSAGE_ROLE_UNSPECIFIED\x10\x00\x12\x15\n\x11MESSAGE_ROLE_USER\x10\x01\x12\x1a\n\x16MESSAGE_ROLE_ASSISTANT\x10\x02\x32\xec\x04\n\x0e\x43hatbotService\x12^\n\x0cStartSession\x12(.hospital.chatbot.v1.StartSessionRequest\x1a$.hospital.chatbot.v1.SessionResponse\x12\x63\n\x0c\x41skAssistant\x12(.hospital.chatbot.v1.AskAssistantRequest\x1a).hospital.chatbot.v1.AskAssistantResponse\x12l\n\x0fGetConversation\x12+.hospital.chatbot.v1.GetConversationRequest\x1a,.hospital.chatbot.v1.GetConversationResponse\x12\x63\n\x0c\x43learSession\x12(.hospital.chatbot.v1.ClearSessionRequest\x1a).hospital.chatbot.v1.ClearSessionResponse\x12l\n\x0fGetCapabilities\x12+.hospital.chatbot.v1.GetCapabilitiesRequest\x1a,.hospital.chatbot.v1.GetCapabilitiesResponse\x12T\n\x0bHealthCheck\x12!.hospital.common.v1.HealthRequest\x1a\".hospital.common.v1.HealthResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18\x63hatbot/v1/chatbot.proto\x12\x13hospital.chatbot.v1\x1a\x16\x63ommon/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xff\x01\n\x10\x41ssistantContext\x12\x16\n\x0e\x63urrent_module\x18\x01 \x01(\t\x12\x15\n\rcurrent_route\x18\x02 \x01(\t\x12\x19\n\x11\x61\x63tive_patient_id\x18\x03 \x01(\t\x12\x1d\n\x15\x61\x63tive_patient_number\x18\x04 \x01(\t\x12\x1e\n\x16\x61\x63tive_consultation_id\x18\x05 \x01(\t\x12\x1b\n\x13\x61\x63tive_admission_id\x18\x06 \x01(\t\x12\x19\n\x11\x61\x63tive_invoice_id\x18\x07 \x01(\t\x12\x1a\n\x12\x61\x63tive_employee_id\x18\x08 \x01(\t\x12\x0e\n\x06locale\x18\t \x01(\t\"\x8a\x01\n\x0b\x43hatSession\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12.\n\nstarted_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x9e\x01\n\x0b\x43hatMessage\x12\n\n\x02id\x18\x01 \x01(\t\x12\x12\n\nsession_id\x18\x02 \x01(\t\x12.\n\x04role\x18\x03 \x01(\x0e\x32 .hospital.chatbot.v1.MessageRole\x12\x0f\n\x07\x63ontent\x18\x04 \x01(\t\x12.\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x90\x01\n\x06Source\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0b\n\x03rpc\x18\x02 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\x12\x0f\n\x07success\x18\x04 \x01(\x08\x12\x0f\n\x07message\x18\x05 \x01(\t\x12.\n\nchecked_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"p\n\nCapability\x12\x0e\n\x06intent\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x1b\n\x13required_permission\x18\x03 \x01(\t\x12\x10\n\x08\x65xamples\x18\x04 \x03(\t\x12\x0e\n\x06module\x18\x05 \x01(\t\"&\n\x14PublicWelcomeRequest\x12\x0e\n\x06locale\x18\x01 \x01(\t\"R\n\x16PublicAssistantRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\x0e\n\x06locale\x18\x02 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\"\xc6\x01\n\x17PublicAssistantResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t\x12\x0e\n\x06intent\x18\x02 \x01(\t\x12\x12\n\nconfidence\x18\x03 \x01(\x01\x12\x10\n\x08language\x18\x04 \x01(\t\x12\x1b\n\x13suggested_questions\x18\x05 \x03(\t\x12\x30\n\x04mode\x18\x06 \x01(\x0e\x32\".hospital.chatbot.v1.AssistantMode\x12\x16\n\x0e\x63orrelation_id\x18\x07 \x01(\t\"\x84\x01\n\x13StartSessionRequest\x12\x19\n\x11\x63lient_request_id\x18\x01 \x01(\t\x12\x1a\n\x12preferred_language\x18\x02 \x01(\t\x12\x36\n\x07\x63ontext\x18\x03 \x01(\x0b\x32%.hospital.chatbot.v1.AssistantContext\"\xbe\x01\n\x0fSessionResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\x12\x17\n\x0fwelcome_message\x18\x02 \x01(\t\x12\x10\n\x08language\x18\x03 \x01(\t\x12\x1b\n\x13suggested_questions\x18\x04 \x03(\t\x12\x30\n\x04mode\x18\x05 \x01(\x0e\x32\".hospital.chatbot.v1.AssistantMode\"\x8b\x01\n\x13\x41skAssistantRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x10\n\x08question\x18\x02 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\t\x12\x36\n\x07\x63ontext\x18\x04 \x01(\x0b\x32%.hospital.chatbot.v1.AssistantContext\"\xdf\x02\n\x14\x41skAssistantResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\x12\x38\n\x0e\x61nswer_message\x18\x02 \x01(\x0b\x32 .hospital.chatbot.v1.ChatMessage\x12\x0e\n\x06\x61nswer\x18\x03 \x01(\t\x12\x0e\n\x06intent\x18\x04 \x01(\t\x12\x12\n\nconfidence\x18\x05 \x01(\x01\x12,\n\x07sources\x18\x06 \x03(\x0b\x32\x1b.hospital.chatbot.v1.Source\x12\x10\n\x08language\x18\x07 \x01(\t\x12\x1b\n\x13suggested_questions\x18\x08 \x03(\t\x12\x30\n\x04mode\x18\t \x01(\x0e\x32\".hospital.chatbot.v1.AssistantMode\x12\x17\n\x0fpermission_note\x18\n \x01(\t\"K\n\x16GetConversationRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x0e\n\x06offset\x18\x03 \x01(\x05\"\x8f\x01\n\x17GetConversationResponse\x12\x31\n\x07session\x18\x01 \x01(\x0b\x32 .hospital.chatbot.v1.ChatSession\x12\x32\n\x08messages\x18\x02 \x03(\x0b\x32 .hospital.chatbot.v1.ChatMessage\x12\r\n\x05total\x18\x03 \x01(\x05\")\n\x13\x43learSessionRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"`\n\x14\x43learSessionResponse\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x18\n\x10\x64\x65leted_messages\x18\x02 \x01(\x05\x12\x1a\n\x12\x64\x65leted_tool_calls\x18\x03 \x01(\x05\"b\n\x16GetCapabilitiesRequest\x12\x10\n\x08language\x18\x01 \x01(\t\x12\x36\n\x07\x63ontext\x18\x02 \x01(\x0b\x32%.hospital.chatbot.v1.AssistantContext\"P\n\x17GetCapabilitiesResponse\x12\x35\n\x0c\x63\x61pabilities\x18\x01 \x03(\x0b\x32\x1f.hospital.chatbot.v1.Capability*^\n\x0bMessageRole\x12\x1c\n\x18MESSAGE_ROLE_UNSPECIFIED\x10\x00\x12\x15\n\x11MESSAGE_ROLE_USER\x10\x01\x12\x1a\n\x16MESSAGE_ROLE_ASSISTANT\x10\x02*l\n\rAssistantMode\x12\x1e\n\x1a\x41SSISTANT_MODE_UNSPECIFIED\x10\x00\x12\x19\n\x15\x41SSISTANT_MODE_PUBLIC\x10\x01\x12 \n\x1c\x41SSISTANT_MODE_AUTHENTICATED\x10\x02\x32\xca\x06\n\x0e\x43hatbotService\x12k\n\x10GetPublicWelcome\x12).hospital.chatbot.v1.PublicWelcomeRequest\x1a,.hospital.chatbot.v1.PublicAssistantResponse\x12o\n\x12\x41skPublicAssistant\x12+.hospital.chatbot.v1.PublicAssistantRequest\x1a,.hospital.chatbot.v1.PublicAssistantResponse\x12^\n\x0cStartSession\x12(.hospital.chatbot.v1.StartSessionRequest\x1a$.hospital.chatbot.v1.SessionResponse\x12\x63\n\x0c\x41skAssistant\x12(.hospital.chatbot.v1.AskAssistantRequest\x1a).hospital.chatbot.v1.AskAssistantResponse\x12l\n\x0fGetConversation\x12+.hospital.chatbot.v1.GetConversationRequest\x1a,.hospital.chatbot.v1.GetConversationResponse\x12\x63\n\x0c\x43learSession\x12(.hospital.chatbot.v1.ClearSessionRequest\x1a).hospital.chatbot.v1.ClearSessionResponse\x12l\n\x0fGetCapabilities\x12+.hospital.chatbot.v1.GetCapabilitiesRequest\x1a,.hospital.chatbot.v1.GetCapabilitiesResponse\x12T\n\x0bHealthCheck\x12!.hospital.common.v1.HealthRequest\x1a\".hospital.common.v1.HealthResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'chatbot.v1.chatbot_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_MESSAGEROLE']._serialized_start=1562
-  _globals['_MESSAGEROLE']._serialized_end=1656
-  _globals['_CHATSESSION']._serialized_start=107
-  _globals['_CHATSESSION']._serialized_end=245
-  _globals['_CHATMESSAGE']._serialized_start=248
-  _globals['_CHATMESSAGE']._serialized_end=406
-  _globals['_SOURCE']._serialized_start=409
-  _globals['_SOURCE']._serialized_end=553
-  _globals['_CAPABILITY']._serialized_start=555
-  _globals['_CAPABILITY']._serialized_end=651
-  _globals['_STARTSESSIONREQUEST']._serialized_start=653
-  _globals['_STARTSESSIONREQUEST']._serialized_end=701
-  _globals['_SESSIONRESPONSE']._serialized_start=703
-  _globals['_SESSIONRESPONSE']._serialized_end=771
-  _globals['_ASKASSISTANTREQUEST']._serialized_start=773
-  _globals['_ASKASSISTANTREQUEST']._serialized_end=856
-  _globals['_ASKASSISTANTRESPONSE']._serialized_start=859
-  _globals['_ASKASSISTANTRESPONSE']._serialized_end=1088
-  _globals['_GETCONVERSATIONREQUEST']._serialized_start=1090
-  _globals['_GETCONVERSATIONREQUEST']._serialized_end=1165
-  _globals['_GETCONVERSATIONRESPONSE']._serialized_start=1168
-  _globals['_GETCONVERSATIONRESPONSE']._serialized_end=1311
-  _globals['_CLEARSESSIONREQUEST']._serialized_start=1313
-  _globals['_CLEARSESSIONREQUEST']._serialized_end=1354
-  _globals['_CLEARSESSIONRESPONSE']._serialized_start=1356
-  _globals['_CLEARSESSIONRESPONSE']._serialized_end=1452
-  _globals['_GETCAPABILITIESREQUEST']._serialized_start=1454
-  _globals['_GETCAPABILITIESREQUEST']._serialized_end=1478
-  _globals['_GETCAPABILITIESRESPONSE']._serialized_start=1480
-  _globals['_GETCAPABILITIESRESPONSE']._serialized_end=1560
-  _globals['_CHATBOTSERVICE']._serialized_start=1659
-  _globals['_CHATBOTSERVICE']._serialized_end=2279
+  _globals['_MESSAGEROLE']._serialized_start=2622
+  _globals['_MESSAGEROLE']._serialized_end=2716
+  _globals['_ASSISTANTMODE']._serialized_start=2718
+  _globals['_ASSISTANTMODE']._serialized_end=2826
+  _globals['_ASSISTANTCONTEXT']._serialized_start=107
+  _globals['_ASSISTANTCONTEXT']._serialized_end=362
+  _globals['_CHATSESSION']._serialized_start=365
+  _globals['_CHATSESSION']._serialized_end=503
+  _globals['_CHATMESSAGE']._serialized_start=506
+  _globals['_CHATMESSAGE']._serialized_end=664
+  _globals['_SOURCE']._serialized_start=667
+  _globals['_SOURCE']._serialized_end=811
+  _globals['_CAPABILITY']._serialized_start=813
+  _globals['_CAPABILITY']._serialized_end=925
+  _globals['_PUBLICWELCOMEREQUEST']._serialized_start=927
+  _globals['_PUBLICWELCOMEREQUEST']._serialized_end=965
+  _globals['_PUBLICASSISTANTREQUEST']._serialized_start=967
+  _globals['_PUBLICASSISTANTREQUEST']._serialized_end=1049
+  _globals['_PUBLICASSISTANTRESPONSE']._serialized_start=1052
+  _globals['_PUBLICASSISTANTRESPONSE']._serialized_end=1250
+  _globals['_STARTSESSIONREQUEST']._serialized_start=1253
+  _globals['_STARTSESSIONREQUEST']._serialized_end=1385
+  _globals['_SESSIONRESPONSE']._serialized_start=1388
+  _globals['_SESSIONRESPONSE']._serialized_end=1578
+  _globals['_ASKASSISTANTREQUEST']._serialized_start=1581
+  _globals['_ASKASSISTANTREQUEST']._serialized_end=1720
+  _globals['_ASKASSISTANTRESPONSE']._serialized_start=1723
+  _globals['_ASKASSISTANTRESPONSE']._serialized_end=2074
+  _globals['_GETCONVERSATIONREQUEST']._serialized_start=2076
+  _globals['_GETCONVERSATIONREQUEST']._serialized_end=2151
+  _globals['_GETCONVERSATIONRESPONSE']._serialized_start=2154
+  _globals['_GETCONVERSATIONRESPONSE']._serialized_end=2297
+  _globals['_CLEARSESSIONREQUEST']._serialized_start=2299
+  _globals['_CLEARSESSIONREQUEST']._serialized_end=2340
+  _globals['_CLEARSESSIONRESPONSE']._serialized_start=2342
+  _globals['_CLEARSESSIONRESPONSE']._serialized_end=2438
+  _globals['_GETCAPABILITIESREQUEST']._serialized_start=2440
+  _globals['_GETCAPABILITIESREQUEST']._serialized_end=2538
+  _globals['_GETCAPABILITIESRESPONSE']._serialized_start=2540
+  _globals['_GETCAPABILITIESRESPONSE']._serialized_end=2620
+  _globals['_CHATBOTSERVICE']._serialized_start=2829
+  _globals['_CHATBOTSERVICE']._serialized_end=3671
 # @@protoc_insertion_point(module_scope)

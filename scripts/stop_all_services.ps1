@@ -26,7 +26,7 @@ if (Test-Path $State) {
 }
 
 Start-Sleep -Milliseconds 700
-foreach($port in 50051..50061){
+foreach($port in 50051..50062){
     $listeners=Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
     foreach($listener in @($listeners)){
         $pidToStop=[int]$listener.OwningProcess
@@ -40,7 +40,7 @@ foreach($port in 50051..50061){
 Remove-Item $State -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 $remaining=@()
-foreach($port in 50051..50061){
+foreach($port in 50051..50062){
     if(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue){ $remaining += $port }
 }
 if($remaining.Count -eq 0){

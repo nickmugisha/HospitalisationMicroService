@@ -27,7 +27,13 @@ if _version_not_supported:
 
 
 class ChatbotServiceStub:
-    """Missing associated documentation comment in .proto file."""
+    """PROJECTX CHATBOT V2
+    - public-safe assistant for login page
+    - authenticated role/permission-aware assistant
+    - bilingual French/English
+    - current module/resource context awareness
+    - deterministic ProjectX procedures + permission-safe live gRPC reads
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -35,6 +41,16 @@ class ChatbotServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.GetPublicWelcome = channel.unary_unary(
+                '/hospital.chatbot.v1.ChatbotService/GetPublicWelcome',
+                request_serializer=chatbot_dot_v1_dot_chatbot__pb2.PublicWelcomeRequest.SerializeToString,
+                response_deserializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.FromString,
+                _registered_method=True)
+        self.AskPublicAssistant = channel.unary_unary(
+                '/hospital.chatbot.v1.ChatbotService/AskPublicAssistant',
+                request_serializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantRequest.SerializeToString,
+                response_deserializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.FromString,
+                _registered_method=True)
         self.StartSession = channel.unary_unary(
                 '/hospital.chatbot.v1.ChatbotService/StartSession',
                 request_serializer=chatbot_dot_v1_dot_chatbot__pb2.StartSessionRequest.SerializeToString,
@@ -68,10 +84,30 @@ class ChatbotServiceStub:
 
 
 class ChatbotServiceServicer:
-    """Missing associated documentation comment in .proto file."""
+    """PROJECTX CHATBOT V2
+    - public-safe assistant for login page
+    - authenticated role/permission-aware assistant
+    - bilingual French/English
+    - current module/resource context awareness
+    - deterministic ProjectX procedures + permission-safe live gRPC reads
+    """
+
+    def GetPublicWelcome(self, request, context):
+        """Public-safe RPCs: NO JWT required. They never call clinical/financial/HR data services.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AskPublicAssistant(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def StartSession(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Authenticated assistant RPCs: JWT + chatbot.ask required.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -109,6 +145,16 @@ class ChatbotServiceServicer:
 
 def add_ChatbotServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetPublicWelcome': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPublicWelcome,
+                    request_deserializer=chatbot_dot_v1_dot_chatbot__pb2.PublicWelcomeRequest.FromString,
+                    response_serializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.SerializeToString,
+            ),
+            'AskPublicAssistant': grpc.unary_unary_rpc_method_handler(
+                    servicer.AskPublicAssistant,
+                    request_deserializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantRequest.FromString,
+                    response_serializer=chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.SerializeToString,
+            ),
             'StartSession': grpc.unary_unary_rpc_method_handler(
                     servicer.StartSession,
                     request_deserializer=chatbot_dot_v1_dot_chatbot__pb2.StartSessionRequest.FromString,
@@ -148,7 +194,67 @@ def add_ChatbotServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class ChatbotService:
-    """Missing associated documentation comment in .proto file."""
+    """PROJECTX CHATBOT V2
+    - public-safe assistant for login page
+    - authenticated role/permission-aware assistant
+    - bilingual French/English
+    - current module/resource context awareness
+    - deterministic ProjectX procedures + permission-safe live gRPC reads
+    """
+
+    @staticmethod
+    def GetPublicWelcome(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.chatbot.v1.ChatbotService/GetPublicWelcome',
+            chatbot_dot_v1_dot_chatbot__pb2.PublicWelcomeRequest.SerializeToString,
+            chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AskPublicAssistant(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.chatbot.v1.ChatbotService/AskPublicAssistant',
+            chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantRequest.SerializeToString,
+            chatbot_dot_v1_dot_chatbot__pb2.PublicAssistantResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def StartSession(request,

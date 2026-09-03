@@ -1,0 +1,358 @@
+syntax = "proto3";
+
+package hospital.hr.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// PROJECTX v2.2 EXTENSION - HUMAN RESOURCES + HR-CONTROLLED ATTENDANCE
+// Port: 50062
+// This service is an explicit extension beyond the official v2.0 11-service baseline.
+service HRService {
+  rpc RegisterEmployee(RegisterEmployeeRequest) returns (RegisterEmployeeResponse);
+  rpc RetryProvisionAccount(RetryProvisionAccountRequest) returns (EmployeeResponse);
+  rpc GetEmployee(GetEmployeeRequest) returns (EmployeeResponse);
+  rpc ListEmployees(ListEmployeesRequest) returns (ListEmployeesResponse);
+  rpc UpdateEmployee(UpdateEmployeeRequest) returns (EmployeeResponse);
+  rpc SetEmploymentStatus(SetEmploymentStatusRequest) returns (EmployeeResponse);
+
+  rpc CreateShift(CreateShiftRequest) returns (ShiftResponse);
+  rpc UpdateShift(UpdateShiftRequest) returns (ShiftResponse);
+  rpc ListShifts(ListShiftsRequest) returns (ListShiftsResponse);
+  rpc CancelShift(CancelShiftRequest) returns (ShiftResponse);
+
+  rpc ClockIn(ClockInRequest) returns (AttendanceResponse);
+  rpc ClockOut(ClockOutRequest) returns (AttendanceResponse);
+  rpc RecordAttendanceByHR(RecordAttendanceByHRRequest) returns (AttendanceResponse);
+  rpc CorrectAttendance(CorrectAttendanceRequest) returns (AttendanceResponse);
+  rpc FinalizeAttendanceDay(FinalizeAttendanceDayRequest) returns (FinalizeAttendanceDayResponse);
+  rpc ListAttendance(ListAttendanceRequest) returns (ListAttendanceResponse);
+  rpc GetAttendanceSummary(GetAttendanceSummaryRequest) returns (AttendanceSummaryResponse);
+  rpc GetMyAttendanceToday(hospital.common.v1.Empty) returns (AttendanceResponse);
+  rpc ListMyAttendance(ListMyAttendanceRequest) returns (ListAttendanceResponse);
+  rpc ListMyShifts(ListMyShiftsRequest) returns (ListShiftsResponse);
+
+  rpc SubmitLeaveRequest(SubmitLeaveRequestRequest) returns (LeaveRequestResponse);
+  rpc ReviewLeaveRequest(ReviewLeaveRequestRequest) returns (LeaveRequestResponse);
+  rpc ListLeaveRequests(ListLeaveRequestsRequest) returns (ListLeaveRequestsResponse);
+  rpc ListMyLeaveRequests(ListMyLeaveRequestsRequest) returns (ListLeaveRequestsResponse);
+  rpc CancelMyLeaveRequest(CancelMyLeaveRequestRequest) returns (LeaveRequestResponse);
+
+  rpc GetHrDashboard(HrDashboardRequest) returns (HrDashboardResponse);
+  rpc ListHrAuditLogs(ListHrAuditLogsRequest) returns (ListHrAuditLogsResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
+}
+
+enum EmploymentStatus {
+  EMPLOYMENT_STATUS_UNSPECIFIED = 0;
+  EMPLOYMENT_STATUS_ACTIVE = 1;
+  EMPLOYMENT_STATUS_SUSPENDED = 2;
+  EMPLOYMENT_STATUS_INACTIVE = 3;
+  EMPLOYMENT_STATUS_TERMINATED = 4;
+}
+
+enum AccountProvisionStatus {
+  ACCOUNT_PROVISION_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_PROVISION_STATUS_NOT_PROVISIONED = 1;
+  ACCOUNT_PROVISION_STATUS_PROVISIONED_PENDING_ADMIN = 2;
+  ACCOUNT_PROVISION_STATUS_FAILED = 3;
+}
+
+enum ShiftStatus {
+  SHIFT_STATUS_UNSPECIFIED = 0;
+  SHIFT_STATUS_SCHEDULED = 1;
+  SHIFT_STATUS_CANCELLED = 2;
+  SHIFT_STATUS_COMPLETED = 3;
+}
+
+enum AttendanceStatus {
+  ATTENDANCE_STATUS_UNSPECIFIED = 0;
+  ATTENDANCE_STATUS_PRESENT = 1;
+  ATTENDANCE_STATUS_LATE = 2;
+  ATTENDANCE_STATUS_ABSENT = 3;
+  ATTENDANCE_STATUS_EXCUSED = 4;
+}
+
+enum AttendanceSource {
+  ATTENDANCE_SOURCE_UNSPECIFIED = 0;
+  ATTENDANCE_SOURCE_EMPLOYEE_CLOCK = 1;
+  ATTENDANCE_SOURCE_HR_MANUAL = 2;
+  ATTENDANCE_SOURCE_SYSTEM_AUTO = 3;
+}
+
+enum LeaveStatus {
+  LEAVE_STATUS_UNSPECIFIED = 0;
+  LEAVE_STATUS_PENDING = 1;
+  LEAVE_STATUS_APPROVED = 2;
+  LEAVE_STATUS_REJECTED = 3;
+  LEAVE_STATUS_CANCELLED = 4;
+}
+
+message Employee {
+  string id = 1;
+  string employee_number = 2;
+  string auth_user_id = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string email = 6;
+  string phone = 7;
+  string department = 8;
+  string job_title = 9;
+  string hire_date = 10; // YYYY-MM-DD hospital local date
+  string employment_type = 11;
+  EmploymentStatus employment_status = 12;
+  AccountProvisionStatus account_provision_status = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message RegisterEmployeeRequest {
+  string employee_number = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string phone = 5;
+  string department = 6;
+  string job_title = 7;
+  string hire_date = 8;
+  string employment_type = 9;
+  string username = 10;
+  string temporary_password = 11;
+  hospital.common.v1.AuditMetadata audit = 12;
+}
+message RegisterEmployeeResponse {
+  Employee employee = 1;
+  string access_request_status = 2;
+}
+message RetryProvisionAccountRequest {
+  string employee_id = 1;
+  string username = 2;
+  string temporary_password = 3;
+}
+message GetEmployeeRequest { string employee_id = 1; }
+message EmployeeResponse { Employee employee = 1; }
+message ListEmployeesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+  string department = 3;
+  string employment_status = 4;
+  string search = 5;
+}
+message ListEmployeesResponse {
+  repeated Employee employees = 1;
+  int64 total = 2;
+}
+message UpdateEmployeeRequest {
+  string employee_id = 1;
+  string email = 2;
+  string phone = 3;
+  string department = 4;
+  string job_title = 5;
+  string employment_type = 6;
+  string first_name = 7;
+  string last_name = 8;
+}
+message SetEmploymentStatusRequest {
+  string employee_id = 1;
+  EmploymentStatus status = 2;
+  string reason = 3;
+}
+
+message Shift {
+  string id = 1;
+  string employee_id = 2;
+  string shift_date = 3;
+  string start_time = 4;
+  string end_time = 5;
+  string location = 6;
+  ShiftStatus status = 7;
+  google.protobuf.Timestamp created_at = 8;
+  bool overnight = 9;
+}
+message CreateShiftRequest {
+  string employee_id = 1;
+  string shift_date = 2;
+  string start_time = 3;
+  string end_time = 4;
+  string location = 5;
+  string idempotency_key = 6;
+}
+message ShiftResponse { Shift shift = 1; }
+message UpdateShiftRequest {
+  string shift_id = 1;
+  string shift_date = 2;
+  string start_time = 3;
+  string end_time = 4;
+  string location = 5;
+  string reason = 6;
+}
+message ListShiftsRequest {
+  string employee_id = 1;
+  string from_date = 2;
+  string to_date = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+message ListShiftsResponse { repeated Shift shifts = 1; int64 total = 2; }
+message CancelShiftRequest { string shift_id = 1; string reason = 2; }
+
+message Attendance {
+  string id = 1;
+  string employee_id = 2;
+  string work_date = 3;
+  google.protobuf.Timestamp clock_in_at = 4;
+  google.protobuf.Timestamp clock_out_at = 5;
+  AttendanceStatus status = 6;
+  string notes = 7;
+  string corrected_by_auth_user_id = 8;
+  google.protobuf.Timestamp corrected_at = 9;
+  AttendanceSource source = 10;
+  int32 late_minutes = 11;
+  int32 worked_minutes = 12;
+  string validated_by_auth_user_id = 13;
+  google.protobuf.Timestamp validated_at = 14;
+}
+message ClockInRequest { string note = 1; }
+message ClockOutRequest { string note = 1; }
+message AttendanceResponse { Attendance attendance = 1; }
+message RecordAttendanceByHRRequest {
+  string employee_id = 1;
+  string work_date = 2;
+  google.protobuf.Timestamp clock_in_at = 3;
+  google.protobuf.Timestamp clock_out_at = 4;
+  AttendanceStatus status = 5;
+  string reason = 6;
+}
+message CorrectAttendanceRequest {
+  string employee_id = 1;
+  string work_date = 2;
+  google.protobuf.Timestamp clock_in_at = 3;
+  google.protobuf.Timestamp clock_out_at = 4;
+  AttendanceStatus status = 5;
+  string reason = 6;
+}
+message ListAttendanceRequest {
+  string employee_id = 1;
+  string from_date = 2;
+  string to_date = 3;
+  string status = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+message ListAttendanceResponse { repeated Attendance attendance = 1; int64 total = 2; }
+message ListMyAttendanceRequest { string from_date = 1; string to_date = 2; int32 limit = 3; int32 offset = 4; }
+message ListMyShiftsRequest { string from_date = 1; string to_date = 2; int32 limit = 3; int32 offset = 4; }
+message FinalizeAttendanceDayRequest {
+  string work_date = 1;
+  string reason = 2;
+}
+message FinalizeAttendanceDayResponse {
+  string work_date = 1;
+  int64 scheduled_employees = 2;
+  int64 existing_records = 3;
+  int64 auto_absent_created = 4;
+  int64 auto_excused_created = 5;
+}
+message AttendanceEmployeeSummary {
+  string employee_id = 1;
+  string employee_number = 2;
+  string display_name = 3;
+  string department = 4;
+  int64 present_days = 5;
+  int64 late_days = 6;
+  int64 absent_days = 7;
+  int64 excused_days = 8;
+  int64 late_minutes = 9;
+  int64 worked_minutes = 10;
+}
+message GetAttendanceSummaryRequest {
+  string from_date = 1;
+  string to_date = 2;
+  string employee_id = 3;
+  string department = 4;
+}
+message AttendanceSummaryResponse {
+  string from_date = 1;
+  string to_date = 2;
+  int64 present_days = 3;
+  int64 late_days = 4;
+  int64 absent_days = 5;
+  int64 excused_days = 6;
+  int64 total_late_minutes = 7;
+  int64 total_worked_minutes = 8;
+  repeated AttendanceEmployeeSummary employees = 9;
+}
+
+message LeaveRequest {
+  string id = 1;
+  string employee_id = 2;
+  string leave_type = 3;
+  string start_date = 4;
+  string end_date = 5;
+  string reason = 6;
+  LeaveStatus status = 7;
+  string reviewed_by_auth_user_id = 8;
+  google.protobuf.Timestamp reviewed_at = 9;
+  string review_note = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+message SubmitLeaveRequestRequest {
+  string leave_type = 1;
+  string start_date = 2;
+  string end_date = 3;
+  string reason = 4;
+}
+message LeaveRequestResponse { LeaveRequest leave_request = 1; }
+message ReviewLeaveRequestRequest {
+  string leave_request_id = 1;
+  LeaveStatus decision = 2;
+  string review_note = 3;
+}
+message ListLeaveRequestsRequest {
+  string employee_id = 1;
+  string status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListLeaveRequestsResponse { repeated LeaveRequest leave_requests = 1; int64 total = 2; }
+message ListMyLeaveRequestsRequest { string status = 1; int32 limit = 2; int32 offset = 3; }
+message CancelMyLeaveRequestRequest { string leave_request_id = 1; string reason = 2; }
+
+message HrDashboardRequest { string work_date = 1; }
+message HrDashboardResponse {
+  string work_date = 1;
+  int64 active_employees = 2;
+  int64 scheduled_today = 3;
+  int64 present_today = 4;
+  int64 late_today = 5;
+  int64 absent_today = 6;
+  int64 pending_leave_requests = 7;
+  int64 excused_today = 8;
+  int64 total_late_minutes_today = 9;
+  int64 total_worked_minutes_today = 10;
+  int64 not_started_today = 11;
+}
+
+
+message HRAuditLog {
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string actor_auth_user_id = 3;
+  string action = 4;
+  string resource_type = 5;
+  string resource_id = 6;
+  string outcome = 7;
+  string reason = 8;
+  string peer = 9;
+}
+message ListHrAuditLogsRequest {
+  string actor_auth_user_id = 1;
+  string action = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+  string from_date = 5;
+  string to_date = 6;
+  int32 limit = 7;
+  int32 offset = 8;
+}
+message ListHrAuditLogsResponse { repeated HRAuditLog logs = 1; int64 total = 2; }

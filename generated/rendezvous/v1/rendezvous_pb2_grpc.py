@@ -40,6 +40,16 @@ class RendezvousServiceStub:
                 request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.CreateScheduleSlotRequest.SerializeToString,
                 response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
                 _registered_method=True)
+        self.UpdateScheduleSlot = channel.unary_unary(
+                '/hospital.rendezvous.v1.RendezvousService/UpdateScheduleSlot',
+                request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.UpdateScheduleSlotRequest.SerializeToString,
+                response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
+                _registered_method=True)
+        self.BlockScheduleSlot = channel.unary_unary(
+                '/hospital.rendezvous.v1.RendezvousService/BlockScheduleSlot',
+                request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.BlockScheduleSlotRequest.SerializeToString,
+                response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
+                _registered_method=True)
         self.ListAvailableSlots = channel.unary_unary(
                 '/hospital.rendezvous.v1.RendezvousService/ListAvailableSlots',
                 request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAvailableSlotsRequest.SerializeToString,
@@ -58,6 +68,11 @@ class RendezvousServiceStub:
         self.ListAgenda = channel.unary_unary(
                 '/hospital.rendezvous.v1.RendezvousService/ListAgenda',
                 request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaRequest.SerializeToString,
+                response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.FromString,
+                _registered_method=True)
+        self.ListPatientAppointments = channel.unary_unary(
+                '/hospital.rendezvous.v1.RendezvousService/ListPatientAppointments',
+                request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListPatientAppointmentsRequest.SerializeToString,
                 response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.FromString,
                 _registered_method=True)
         self.ConfirmAppointment = channel.unary_unary(
@@ -85,6 +100,11 @@ class RendezvousServiceStub:
                 request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.CompleteAppointmentRequest.SerializeToString,
                 response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.FromString,
                 _registered_method=True)
+        self.MarkNoShow = channel.unary_unary(
+                '/hospital.rendezvous.v1.RendezvousService/MarkNoShow',
+                request_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.MarkNoShowRequest.SerializeToString,
+                response_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.FromString,
+                _registered_method=True)
         self.HealthCheck = channel.unary_unary(
                 '/hospital.rendezvous.v1.RendezvousService/HealthCheck',
                 request_serializer=common_dot_v1_dot_common__pb2.HealthRequest.SerializeToString,
@@ -96,6 +116,18 @@ class RendezvousServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def CreateScheduleSlot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateScheduleSlot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def BlockScheduleSlot(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -120,6 +152,12 @@ class RendezvousServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
     def ListAgenda(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPatientAppointments(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -155,6 +193,12 @@ class RendezvousServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MarkNoShow(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def HealthCheck(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -167,6 +211,16 @@ def add_RendezvousServiceServicer_to_server(servicer, server):
             'CreateScheduleSlot': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateScheduleSlot,
                     request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.CreateScheduleSlotRequest.FromString,
+                    response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.SerializeToString,
+            ),
+            'UpdateScheduleSlot': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateScheduleSlot,
+                    request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.UpdateScheduleSlotRequest.FromString,
+                    response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.SerializeToString,
+            ),
+            'BlockScheduleSlot': grpc.unary_unary_rpc_method_handler(
+                    servicer.BlockScheduleSlot,
+                    request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.BlockScheduleSlotRequest.FromString,
                     response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.SerializeToString,
             ),
             'ListAvailableSlots': grpc.unary_unary_rpc_method_handler(
@@ -187,6 +241,11 @@ def add_RendezvousServiceServicer_to_server(servicer, server):
             'ListAgenda': grpc.unary_unary_rpc_method_handler(
                     servicer.ListAgenda,
                     request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaRequest.FromString,
+                    response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.SerializeToString,
+            ),
+            'ListPatientAppointments': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPatientAppointments,
+                    request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListPatientAppointmentsRequest.FromString,
                     response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.SerializeToString,
             ),
             'ConfirmAppointment': grpc.unary_unary_rpc_method_handler(
@@ -212,6 +271,11 @@ def add_RendezvousServiceServicer_to_server(servicer, server):
             'CompleteAppointment': grpc.unary_unary_rpc_method_handler(
                     servicer.CompleteAppointment,
                     request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.CompleteAppointmentRequest.FromString,
+                    response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.SerializeToString,
+            ),
+            'MarkNoShow': grpc.unary_unary_rpc_method_handler(
+                    servicer.MarkNoShow,
+                    request_deserializer=rendezvous_dot_v1_dot_rendezvous__pb2.MarkNoShowRequest.FromString,
                     response_serializer=rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.SerializeToString,
             ),
             'HealthCheck': grpc.unary_unary_rpc_method_handler(
@@ -246,6 +310,60 @@ class RendezvousService:
             target,
             '/hospital.rendezvous.v1.RendezvousService/CreateScheduleSlot',
             rendezvous_dot_v1_dot_rendezvous__pb2.CreateScheduleSlotRequest.SerializeToString,
+            rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateScheduleSlot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.rendezvous.v1.RendezvousService/UpdateScheduleSlot',
+            rendezvous_dot_v1_dot_rendezvous__pb2.UpdateScheduleSlotRequest.SerializeToString,
+            rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def BlockScheduleSlot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.rendezvous.v1.RendezvousService/BlockScheduleSlot',
+            rendezvous_dot_v1_dot_rendezvous__pb2.BlockScheduleSlotRequest.SerializeToString,
             rendezvous_dot_v1_dot_rendezvous__pb2.ScheduleSlotResponse.FromString,
             options,
             channel_credentials,
@@ -354,6 +472,33 @@ class RendezvousService:
             target,
             '/hospital.rendezvous.v1.RendezvousService/ListAgenda',
             rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaRequest.SerializeToString,
+            rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListPatientAppointments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.rendezvous.v1.RendezvousService/ListPatientAppointments',
+            rendezvous_dot_v1_dot_rendezvous__pb2.ListPatientAppointmentsRequest.SerializeToString,
             rendezvous_dot_v1_dot_rendezvous__pb2.ListAgendaResponse.FromString,
             options,
             channel_credentials,
@@ -489,6 +634,33 @@ class RendezvousService:
             target,
             '/hospital.rendezvous.v1.RendezvousService/CompleteAppointment',
             rendezvous_dot_v1_dot_rendezvous__pb2.CompleteAppointmentRequest.SerializeToString,
+            rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def MarkNoShow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.rendezvous.v1.RendezvousService/MarkNoShow',
+            rendezvous_dot_v1_dot_rendezvous__pb2.MarkNoShowRequest.SerializeToString,
             rendezvous_dot_v1_dot_rendezvous__pb2.AppointmentResponse.FromString,
             options,
             channel_credentials,

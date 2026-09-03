@@ -1,158 +1,141 @@
 ROLES = {
-    "ADMIN_HOPITAL": {
-        "name": "Administrateur Hôpital",
-        "description": "Administration générale, comptes, rôles, configuration, audit et supervision.",
-    },
-    "AGENT_ACCUEIL": {
-        "name": "Agent d'accueil",
-        "description": "Gestion administrative des patients, arrivées, orientation et rendez-vous.",
-    },
-    "MEDECIN": {
-        "name": "Médecin",
-        "description": "Consultations, prescriptions, demandes de laboratoire et d'hospitalisation.",
-    },
-    "INFIRMIER": {
-        "name": "Infirmier",
-        "description": "Suivi du séjour hospitalier selon permissions.",
-    },
-    "RESP_HOSPITALISATION": {
-        "name": "Responsable Hospitalisation",
-        "description": "Admissions, lits, transferts et sorties.",
-    },
-    "LABORANTIN": {
-        "name": "Laborantin",
-        "description": "Prélèvements, résultats et validation laboratoire.",
-    },
-    "PHARMACIEN": {
-        "name": "Pharmacien",
-        "description": "Médicaments, stock et délivrances.",
-    },
-    "CAISSIER": {
-        "name": "Caissier",
-        "description": "Facturation, paiements et reçus.",
-    },
-    "SAGE_FEMME": {
-        "name": "Sage-femme",
-        "description": "Suivi maternité, travail, accouchement et nouveau-né.",
-    },
-    "RESPONSABLE_LOGISTIQUE": {
-        "name": "Responsable Logistique",
-        "description": "Fournisseurs, achats et réapprovisionnement.",
-    },
-    "RESPONSABLE_BI": {
-        "name": "Responsable BI / Direction",
-        "description": "Consultation des indicateurs et rapports.",
-    },
+    "ADMIN_HOPITAL": {"name": "Administrateur Hôpital", "description": "Administration générale, comptes, rôles, configuration, audit et supervision."},
+    "RESPONSABLE_RH": {"name": "Responsable Ressources Humaines", "description": "Personnel, horaires, présences, congés et demandes d’accès; aucun droit d’auto-attribution de rôle."},
+    "AGENT_ACCUEIL": {"name": "Agent d'accueil", "description": "Gestion administrative des patients, arrivées, orientation et rendez-vous."},
+    "MEDECIN": {"name": "Médecin", "description": "Consultations, prescriptions, demandes de laboratoire et d'hospitalisation."},
+    "INFIRMIER": {"name": "Infirmier", "description": "Suivi du séjour hospitalier selon permissions."},
+    "RESP_HOSPITALISATION": {"name": "Responsable Hospitalisation", "description": "Admissions, lits, transferts et sorties."},
+    "LABORANTIN": {"name": "Laborantin", "description": "Prélèvements, résultats et validation laboratoire."},
+    "PHARMACIEN": {"name": "Pharmacien", "description": "Médicaments, stock et délivrances."},
+    "CAISSIER": {"name": "Caissier", "description": "Facturation, paiements et reçus."},
+    "SAGE_FEMME": {"name": "Sage-femme", "description": "Suivi maternité, travail, accouchement et nouveau-né."},
+    "RESPONSABLE_LOGISTIQUE": {"name": "Responsable Logistique", "description": "Fournisseurs, achats et réapprovisionnement."},
+    "RESPONSABLE_BI": {"name": "Responsable BI / Direction", "description": "Consultation des indicateurs et rapports."},
 }
 
 PERMISSIONS = {
     "auth.users.read": "Consulter les utilisateurs",
-    "auth.users.create": "Créer un utilisateur",
+    "auth.users.create": "Créer directement un utilisateur",
     "auth.users.disable": "Désactiver un utilisateur",
+    "auth.users.approve": "Approuver ou rejeter une demande d'accès du personnel",
     "auth.roles.assign": "Attribuer les rôles",
+    "auth.qr.manage": "Émettre, renouveler ou révoquer les QR de connexion",
     "auth.audit.read": "Consulter les journaux d'audit",
+    "auth.staff.read": "Consulter les dossiers d'accès du personnel",
+    "auth.staff.create": "Créer une demande d'accès pour un membre du personnel",
+    "auth.staff.update": "Synchroniser les informations et le statut d'un membre du personnel",
+    "auth.directory.read": "Consulter l'annuaire professionnel limité du personnel",
+    "notification.send": "Envoyer une notification manuelle autorisée",
+
+    "hr.employee.read": "Consulter le personnel RH",
+    "hr.employee.create": "Créer un dossier employé",
+    "hr.employee.update": "Modifier un dossier employé",
+    "hr.employee.status": "Modifier le statut d'emploi",
+    "hr.shift.read": "Consulter les horaires du personnel",
+    "hr.shift.manage": "Planifier et annuler les horaires",
+    "hr.attendance.read": "Consulter les présences",
+    "hr.attendance.clock": "Pointer entrée et sortie",
+    "hr.attendance.correct": "Corriger une présence avec traçabilité",
+    "hr.attendance.manage": "Enregistrer une présence manuellement au nom des RH",
+    "hr.attendance.close_day": "Clôturer la journée de présence et générer les absences",
+    "hr.attendance.summary": "Consulter les synthèses de présence",
+    "hr.leave.submit": "Introduire une demande de congé",
+    "hr.leave.read": "Consulter les demandes de congé",
+    "hr.leave.review": "Approuver ou rejeter les congés",
+    "hr.dashboard.read": "Consulter le tableau de bord RH",
+    "hr.self.read": "Consulter ses propres horaires, présences et congés",
+    "hr.audit.read": "Consulter le journal d'audit RH",
 
     "accueil.patient.read": "Consulter les patients",
     "accueil.patient.create": "Créer un patient",
     "accueil.patient.update": "Modifier un patient",
     "accueil.arrival.create": "Enregistrer une arrivée",
     "accueil.queue.read": "Consulter la file d'attente",
-
     "consultation.read": "Consulter les consultations",
     "consultation.create": "Créer une consultation",
     "consultation.update": "Modifier une consultation ouverte",
     "consultation.close": "Clôturer une consultation",
     "consultation.prescription.issue": "Émettre une ordonnance",
     "consultation.lab.request": "Demander un examen laboratoire",
-
+    "lab.catalog.read": "Consulter le catalogue des examens laboratoire",
     "lab.orders.read": "Consulter les ordres laboratoire",
     "lab.sample.collect": "Enregistrer un prélèvement",
     "lab.result.record": "Saisir un résultat",
     "lab.result.validate": "Valider un résultat",
-
+    "pharmacy.catalog.read": "Consulter le catalogue médicament sans droits de gestion",
+    "pharmacy.prescription.read": "Consulter la file des ordonnances à délivrer",
     "pharmacy.stock.read": "Consulter le stock",
+    "pharmacy.catalog.manage": "Créer et modifier le catalogue médicament",
+    "pharmacy.procurement.read": "Consulter fournisseurs et commandes",
+    "pharmacy.procurement.manage": "Gérer les commandes et réceptions",
     "pharmacy.stock.manage": "Gérer les entrées de stock",
     "pharmacy.dispense": "Délivrer une prescription",
-
     "hospitalisation.read": "Consulter les hospitalisations",
+    "hospitalisation.structure.manage": "Gérer unités, chambres et lits",
+    "hospitalisation.doctor.read": "Consulter les affectations médecins et leur charge",
+    "hospitalisation.doctor.assign": "Affecter un médecin à une hospitalisation",
+    "hospitalisation.doctor.complete": "Clôturer une affectation médecin",
+    "hospitalisation.admission.approve": "Valider une demande d'hospitalisation",
     "hospitalisation.admit": "Admettre un patient",
     "hospitalisation.bed.assign": "Affecter un lit",
     "hospitalisation.transfer": "Transférer un patient",
     "hospitalisation.discharge": "Sortir un patient",
-
     "billing.read": "Consulter la facturation",
     "billing.charge.create": "Créer une charge facturable interservice",
     "billing.payment.record": "Enregistrer un paiement",
     "billing.payment.reverse": "Effectuer un reversal",
-
     "maternity.read": "Consulter les dossiers maternité",
     "maternity.case.create": "Créer ou orienter un dossier maternité",
     "maternity.manage": "Gérer le parcours maternité",
-
     "appointment.read": "Consulter les rendez-vous",
     "appointment.manage": "Gérer les rendez-vous",
-
     "bi.dashboard.read": "Consulter les statistiques",
     "notification.read": "Consulter les notifications",
+    "chatbot.ask": "Utiliser assistant conversationnel sécurisé",
 }
+
+SELF_HR = {"hr.attendance.clock", "hr.leave.submit", "hr.self.read"}
 
 ROLE_PERMISSIONS = {
     "ADMIN_HOPITAL": set(PERMISSIONS.keys()),
-
+    "RESPONSABLE_RH": {
+        "auth.users.read", "auth.staff.read", "auth.staff.create", "auth.staff.update", "auth.directory.read",
+        "hr.employee.read", "hr.employee.create", "hr.employee.update", "hr.employee.status",
+        "hr.shift.read", "hr.shift.manage", "hr.attendance.read", "hr.attendance.correct", "hr.attendance.manage", "hr.attendance.close_day", "hr.attendance.summary",
+        "hr.leave.read", "hr.leave.review", "hr.dashboard.read", "hr.audit.read",
+        "notification.read", "chatbot.ask",
+    } | SELF_HR,
     "AGENT_ACCUEIL": {
         "accueil.patient.read", "accueil.patient.create", "accueil.patient.update",
-        "accueil.arrival.create", "accueil.queue.read", "appointment.read",
-        "appointment.manage", "notification.read",
-    },
-
+        "accueil.arrival.create", "accueil.queue.read", "appointment.read", "appointment.manage",
+        "notification.read", "chatbot.ask",
+    } | SELF_HR,
     "MEDECIN": {
-        "accueil.patient.read", "consultation.read", "consultation.create",
-        "consultation.update", "consultation.close", "consultation.prescription.issue",
-        "consultation.lab.request", "lab.orders.read", "hospitalisation.read",
-        "hospitalisation.admit", "maternity.read", "maternity.case.create", "notification.read",
-    },
-
+        "accueil.patient.read", "consultation.read", "consultation.create", "consultation.update",
+        "consultation.close", "consultation.prescription.issue", "consultation.lab.request",
+        "lab.catalog.read", "lab.orders.read", "pharmacy.catalog.read", "hospitalisation.read", "hospitalisation.admit", "hospitalisation.doctor.read", "hospitalisation.doctor.complete", "maternity.read",
+        "maternity.case.create", "notification.read", "chatbot.ask",
+    } | SELF_HR,
     "LABORANTIN": {
-        "accueil.patient.read", "lab.orders.read", "lab.sample.collect",
-        "lab.result.record", "lab.result.validate", "billing.charge.create",
-        "notification.read",
-    },
-
+        "accueil.patient.read", "lab.catalog.read", "lab.orders.read", "lab.sample.collect", "lab.result.record",
+        "lab.result.validate", "billing.charge.create", "notification.read", "chatbot.ask",
+    } | SELF_HR,
     "PHARMACIEN": {
-        "accueil.patient.read", "pharmacy.stock.read", "pharmacy.stock.manage",
-        "pharmacy.dispense", "billing.charge.create", "notification.read",
-    },
-
-    "CAISSIER": {
-        "billing.read", "billing.payment.record", "notification.read",
-    },
-
+        "accueil.patient.read", "pharmacy.catalog.read", "pharmacy.prescription.read", "pharmacy.stock.read", "pharmacy.stock.manage", "pharmacy.catalog.manage", "pharmacy.procurement.read", "pharmacy.procurement.manage", "pharmacy.dispense",
+        "billing.charge.create", "notification.read", "chatbot.ask",
+    } | SELF_HR,
+    "CAISSIER": {"billing.read", "billing.payment.record", "notification.read", "chatbot.ask"} | SELF_HR,
     "RESP_HOSPITALISATION": {
-        "accueil.patient.read", "hospitalisation.read", "hospitalisation.admit",
-        "hospitalisation.bed.assign", "hospitalisation.transfer",
-        "hospitalisation.discharge", "billing.charge.create", "notification.read",
-    },
-
-    "INFIRMIER": {
-        "accueil.patient.read", "hospitalisation.read", "notification.read",
-    },
-
+        "accueil.patient.read", "auth.directory.read", "hospitalisation.read", "hospitalisation.admit",
+        "hospitalisation.structure.manage", "hospitalisation.doctor.read", "hospitalisation.doctor.assign", "hospitalisation.doctor.complete", "hospitalisation.admission.approve",
+        "hospitalisation.bed.assign", "hospitalisation.transfer", "hospitalisation.discharge",
+        "billing.charge.create", "notification.read", "chatbot.ask",
+    } | SELF_HR,
+    "INFIRMIER": {"accueil.patient.read", "hospitalisation.read", "hospitalisation.doctor.read", "notification.read", "chatbot.ask"} | SELF_HR,
     "SAGE_FEMME": {
-        "accueil.patient.read", "maternity.read", "maternity.case.create", "maternity.manage",
-        "billing.charge.create", "notification.read",
-    },
-
-    "RESPONSABLE_LOGISTIQUE": {
-        "pharmacy.stock.read", "pharmacy.stock.manage", "notification.read",
-    },
-
-    "RESPONSABLE_BI": {
-        "bi.dashboard.read", "notification.read",
-    },
+        "accueil.patient.read", "lab.catalog.read", "pharmacy.catalog.read", "maternity.read", "maternity.case.create", "maternity.manage",
+        "billing.charge.create", "notification.read", "chatbot.ask",
+    } | SELF_HR,
+    "RESPONSABLE_LOGISTIQUE": {"pharmacy.catalog.read", "pharmacy.catalog.manage", "pharmacy.stock.read", "pharmacy.stock.manage", "pharmacy.procurement.read", "pharmacy.procurement.manage", "notification.read", "chatbot.ask"} | SELF_HR,
+    "RESPONSABLE_BI": {"bi.dashboard.read", "notification.read", "chatbot.ask"} | SELF_HR,
 }
-
-
-# PROJECTX LOT K CHATBOT RBAC PATCH
-PERMISSIONS['chatbot.ask'] = 'Utiliser assistant conversationnel securise'
-for _projectx_role_code in ROLES:
-    ROLE_PERMISSIONS.setdefault(_projectx_role_code, set()).add('chatbot.ask')

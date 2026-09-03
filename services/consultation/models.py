@@ -107,6 +107,10 @@ class PrescriptionItem(ConsultationBase):
         index=True,
     )
     medicine_ref: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    medicine_source: Mapped[str] = mapped_column(String(24), nullable=False, default="HOSPITAL_CATALOG", index=True)
+    medicine_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    medicine_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    medicine_strength: Mapped[str | None] = mapped_column(String(120), nullable=True)
     dose: Mapped[str] = mapped_column(String(120), nullable=False)
     frequency: Mapped[str] = mapped_column(String(120), nullable=False)
     duration: Mapped[str] = mapped_column(String(120), nullable=False)

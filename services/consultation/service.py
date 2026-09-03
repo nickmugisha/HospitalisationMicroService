@@ -37,6 +37,10 @@ PRESCRIPTION_STATUS_DB_TO_PROTO = {
     "ISSUED": consultation_pb2.PRESCRIPTION_STATUS_ISSUED,
     "CANCELLED": consultation_pb2.PRESCRIPTION_STATUS_CANCELLED,
 }
+PRESCRIPTION_SOURCE_DB_TO_PROTO = {
+    "HOSPITAL_CATALOG": consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG,
+    "EXTERNAL": consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL,
+}
 EXTERNAL_TYPE_DB_TO_PROTO = {
     "LAB_TEST": consultation_pb2.EXTERNAL_REQUEST_TYPE_LAB_TEST,
     "HOSPITALIZATION": consultation_pb2.EXTERNAL_REQUEST_TYPE_HOSPITALIZATION,
@@ -96,6 +100,33 @@ def validate_patient_exists(context, patient_id: str):
     if status_name != "PATIENT_STATUS_ACTIVE":
         context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Patient is not ACTIVE.")
     return response.patient
+
+
+def _resolve_hospital_medicine(context, medicine_ref: str):
+    """Resolve an exact active hospital medicine when Pharmacy is reachable.
+
+    If Pharmacy is temporarily unavailable, prescription creation remains resilient and
+    the provided reference/snapshot is persisted; Pharmacy will validate it on exposure/dispense.
+    """
+    try:
+        with grpc.insecure_channel(PHARMACIE_GRPC_TARGET) as channel:
+            stub = pharmacie_pb2_grpc.PharmacieServiceStub(channel)
+            response = stub.SearchMedicines(
+                pharmacie_pb2.SearchMedicinesRequest(query=medicine_ref, active_only=True, limit=50, offset=0),
+                metadata=_authorization_metadata(context),
+                timeout=3,
+            )
+    except grpc.RpcError as error:
+        if error.code() in (grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.PERMISSION_DENIED):
+            context.abort(error.code(), error.details() or "Medicine catalogue access denied.")
+        if error.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED):
+            return None
+        context.abort(grpc.StatusCode.UNAVAILABLE, f"Pharmacy catalogue unavailable: {error.code().name}")
+    ref = medicine_ref.strip().upper()
+    for medicine in response.medicines:
+        if medicine.code.strip().upper() == ref or medicine.id.strip() == medicine_ref.strip():
+            return medicine
+    context.abort(grpc.StatusCode.NOT_FOUND, f"Active hospital medicine not found: {medicine_ref}")
 
 
 def page_values(limit: int, offset: int, context) -> tuple[int, int]:
@@ -175,6 +206,11 @@ def prescription_item_to_proto(item: PrescriptionItem):
         frequency=item.frequency,
         duration=item.duration,
         instructions=item.instructions or "",
+        medicine_source=PRESCRIPTION_SOURCE_DB_TO_PROTO.get(item.medicine_source, consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_UNSPECIFIED),
+        medicine_name=item.medicine_name or item.medicine_ref,
+        medicine_form=item.medicine_form or "",
+        medicine_strength=item.medicine_strength or "",
+        dispensable_by_hospital=(item.medicine_source != "EXTERNAL"),
     )
 
 
@@ -395,17 +431,50 @@ class ConsultationService(consultation_pb2_grpc.ConsultationServiceServicer):
             )
             for raw in request.items:
                 medicine_ref = raw.medicine_ref.strip()
+                medicine_name = raw.medicine_name.strip()
+                medicine_form = raw.medicine_form.strip()
+                medicine_strength = raw.medicine_strength.strip()
                 dose = raw.dose.strip()
                 frequency = raw.frequency.strip()
                 duration = raw.duration.strip()
-                if not medicine_ref or not dose or not frequency or not duration:
-                    context.abort(
-                        grpc.StatusCode.INVALID_ARGUMENT,
-                        "medicine_ref, dose, frequency and duration are required for every prescription item.",
-                    )
+                if not dose or not frequency or not duration:
+                    context.abort(grpc.StatusCode.INVALID_ARGUMENT, "dose, frequency and duration are required for every prescription item.")
+
+                if raw.medicine_source == consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL:
+                    source = "EXTERNAL"
+                elif raw.medicine_source in (
+                    consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_UNSPECIFIED,
+                    consultation_pb2.PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG,
+                ):
+                    # Backward compatibility: legacy requests with medicine_ref remain hospital-catalog prescriptions.
+                    source = "HOSPITAL_CATALOG" if medicine_ref else "EXTERNAL"
+                else:
+                    context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Unknown prescription medicine source.")
+
+                if source == "HOSPITAL_CATALOG":
+                    if not medicine_ref:
+                        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "medicine_ref is required for a hospital catalogue medicine.")
+                    catalog = _resolve_hospital_medicine(context, medicine_ref)
+                    if catalog is not None:
+                        medicine_ref = catalog.code
+                        medicine_name = catalog.name
+                        medicine_form = catalog.form
+                        medicine_strength = catalog.strength
+                    elif not medicine_name:
+                        medicine_name = medicine_ref
+                else:
+                    if not medicine_name:
+                        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "medicine_name is required for an external medicine.")
+                    if not medicine_ref:
+                        medicine_ref = f"EXT-{uuid.uuid4().hex[:12].upper()}"
+
                 prescription.items.append(
                     PrescriptionItem(
                         medicine_ref=medicine_ref,
+                        medicine_source=source,
+                        medicine_name=medicine_name,
+                        medicine_form=medicine_form or None,
+                        medicine_strength=medicine_strength or None,
                         dose=dose,
                         frequency=frequency,
                         duration=duration,
@@ -431,6 +500,10 @@ class ConsultationService(consultation_pb2_grpc.ConsultationServiceServicer):
                     "items": [
                         {
                             "medicine_ref": line.medicine_ref,
+                            "medicine_source": line.medicine_source,
+                            "medicine_name": line.medicine_name,
+                            "medicine_form": line.medicine_form or "",
+                            "medicine_strength": line.medicine_strength or "",
                             "dose": line.dose,
                             "frequency": line.frequency,
                             "duration": line.duration,
@@ -464,6 +537,15 @@ class ConsultationService(consultation_pb2_grpc.ConsultationServiceServicer):
                                     frequency=line.frequency,
                                     duration=line.duration,
                                     instructions=line.instructions or "",
+                                    medicine_source=(
+                                        pharmacie_pb2.PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL
+                                        if line.medicine_source == "EXTERNAL"
+                                        else pharmacie_pb2.PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG
+                                    ),
+                                    medicine_name=line.medicine_name or line.medicine_ref,
+                                    medicine_form=line.medicine_form or "",
+                                    medicine_strength=line.medicine_strength or "",
+                                    dispensable_by_hospital=(line.medicine_source != "EXTERNAL"),
                                 )
                                 for line in prescription.items
                             ],

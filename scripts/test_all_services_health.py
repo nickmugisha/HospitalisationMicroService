@@ -14,6 +14,7 @@ from maternite.v1 import maternite_pb2_grpc
 from rendezvous.v1 import rendezvous_pb2_grpc
 from bi.v1 import bi_pb2_grpc
 from chatbot.v1 import chatbot_pb2_grpc
+from hr.v1 import hr_pb2_grpc
 
 SPECS = [
     ("auth", 50051, auth_pb2_grpc.AuthServiceStub),
@@ -27,6 +28,7 @@ SPECS = [
     ("rendezvous", 50059, rendezvous_pb2_grpc.RendezvousServiceStub),
     ("bi", 50060, bi_pb2_grpc.BIServiceStub),
     ("chatbot", 50061, chatbot_pb2_grpc.ChatbotServiceStub),
+    ("hr", 50062, hr_pb2_grpc.HRServiceStub),
 ]
 
 failed = []
@@ -51,4 +53,4 @@ print("Services online:", len(SPECS) - len(failed), "/", len(SPECS))
 if failed:
     print("Not fully online:", failed)
     raise SystemExit(1)
-print("PROJECTX ALL 11 SERVICES ONLINE")
+print("PROJECTX ALL 12 SERVICES ONLINE (v2.1 incl. HR extension)")

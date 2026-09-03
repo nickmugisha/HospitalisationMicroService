@@ -30,6 +30,12 @@ enum PrescriptionStatus {
   PRESCRIPTION_STATUS_CANCELLED = 2;
 }
 
+enum PrescriptionMedicineSource {
+  PRESCRIPTION_MEDICINE_SOURCE_UNSPECIFIED = 0;
+  PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG = 1;
+  PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL = 2;
+}
+
 enum ExternalRequestType {
   EXTERNAL_REQUEST_TYPE_UNSPECIFIED = 0;
   EXTERNAL_REQUEST_TYPE_LAB_TEST = 1;
@@ -76,14 +82,25 @@ message PrescriptionItem {
   string frequency = 4;
   string duration = 5;
   string instructions = 6;
+  PrescriptionMedicineSource medicine_source = 7;
+  string medicine_name = 8;
+  string medicine_form = 9;
+  string medicine_strength = 10;
+  bool dispensable_by_hospital = 11;
 }
 
 message PrescriptionItemInput {
+  // Existing clients may keep sending medicine_ref only; that defaults to HOSPITAL_CATALOG.
   string medicine_ref = 1;
   string dose = 2;
   string frequency = 3;
   string duration = 4;
   string instructions = 5;
+  PrescriptionMedicineSource medicine_source = 6;
+  // Required for EXTERNAL medicine; for hospital catalogue items the server snapshots Pharmacy data.
+  string medicine_name = 7;
+  string medicine_form = 8;
+  string medicine_strength = 9;
 }
 
 message Prescription {

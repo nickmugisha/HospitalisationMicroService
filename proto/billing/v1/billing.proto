@@ -148,6 +148,7 @@ message RecordPaymentRequest {
   PaymentMethod method = 4;
   string reference = 5;
   string idempotency_key = 6;
+  string notification_recipient_user_id = 7;
 }
 
 message PaymentResponse {
@@ -161,6 +162,7 @@ message ReversePaymentRequest {
   string payment_id = 1;
   string reason = 2;
   string idempotency_key = 3;
+  string notification_recipient_user_id = 4;
 }
 
 message ReversePaymentResponse {

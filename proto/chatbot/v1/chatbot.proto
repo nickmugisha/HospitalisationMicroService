@@ -5,7 +5,18 @@ package hospital.chatbot.v1;
 import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
+// PROJECTX CHATBOT V2
+// - public-safe assistant for login page
+// - authenticated role/permission-aware assistant
+// - bilingual French/English
+// - current module/resource context awareness
+// - deterministic ProjectX procedures + permission-safe live gRPC reads
 service ChatbotService {
+  // Public-safe RPCs: NO JWT required. They never call clinical/financial/HR data services.
+  rpc GetPublicWelcome(PublicWelcomeRequest) returns (PublicAssistantResponse);
+  rpc AskPublicAssistant(PublicAssistantRequest) returns (PublicAssistantResponse);
+
+  // Authenticated assistant RPCs: JWT + chatbot.ask required.
   rpc StartSession(StartSessionRequest) returns (SessionResponse);
   rpc AskAssistant(AskAssistantRequest) returns (AskAssistantResponse);
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
@@ -18,6 +29,25 @@ enum MessageRole {
   MESSAGE_ROLE_UNSPECIFIED = 0;
   MESSAGE_ROLE_USER = 1;
   MESSAGE_ROLE_ASSISTANT = 2;
+}
+
+enum AssistantMode {
+  ASSISTANT_MODE_UNSPECIFIED = 0;
+  ASSISTANT_MODE_PUBLIC = 1;
+  ASSISTANT_MODE_AUTHENTICATED = 2;
+}
+
+message AssistantContext {
+  // UX context only. These fields NEVER grant permissions.
+  string current_module = 1;
+  string current_route = 2;
+  string active_patient_id = 3;
+  string active_patient_number = 4;
+  string active_consultation_id = 5;
+  string active_admission_id = 6;
+  string active_invoice_id = 7;
+  string active_employee_id = 8;
+  string locale = 9; // e.g. fr, fr-BI, en, en-US
 }
 
 message ChatSession {
@@ -49,18 +79,50 @@ message Capability {
   string description = 2;
   string required_permission = 3;
   repeated string examples = 4;
+  string module = 5;
+}
+
+message PublicWelcomeRequest {
+  string locale = 1;
+}
+
+message PublicAssistantRequest {
+  string question = 1;
+  string locale = 2;
+  string correlation_id = 3;
+}
+
+message PublicAssistantResponse {
+  string answer = 1;
+  string intent = 2;
+  double confidence = 3;
+  string language = 4;
+  repeated string suggested_questions = 5;
+  AssistantMode mode = 6;
+  string correlation_id = 7;
 }
 
 message StartSessionRequest {
   string client_request_id = 1;
+  string preferred_language = 2;
+  AssistantContext context = 3;
 }
-message SessionResponse { ChatSession session = 1; }
+
+message SessionResponse {
+  ChatSession session = 1;
+  string welcome_message = 2;
+  string language = 3;
+  repeated string suggested_questions = 4;
+  AssistantMode mode = 5;
+}
 
 message AskAssistantRequest {
   string session_id = 1;
   string question = 2;
   string correlation_id = 3;
+  AssistantContext context = 4;
 }
+
 message AskAssistantResponse {
   ChatSession session = 1;
   ChatMessage answer_message = 2;
@@ -68,6 +130,10 @@ message AskAssistantResponse {
   string intent = 4;
   double confidence = 5;
   repeated Source sources = 6;
+  string language = 7;
+  repeated string suggested_questions = 8;
+  AssistantMode mode = 9;
+  string permission_note = 10;
 }
 
 message GetConversationRequest {
@@ -84,5 +150,8 @@ message GetConversationResponse {
 message ClearSessionRequest { string session_id = 1; }
 message ClearSessionResponse { string session_id = 1; int32 deleted_messages = 2; int32 deleted_tool_calls = 3; }
 
-message GetCapabilitiesRequest {}
+message GetCapabilitiesRequest {
+  string language = 1;
+  AssistantContext context = 2;
+}
 message GetCapabilitiesResponse { repeated Capability capabilities = 1; }

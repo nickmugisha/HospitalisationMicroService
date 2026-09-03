@@ -18,7 +18,8 @@ $Services=@(
   @{Name='maternite';Port=50058;Module='services.maternite.main'},
   @{Name='rendezvous';Port=50059;Module='services.rendezvous.main'},
   @{Name='bi';Port=50060;Module='services.bi.main'},
-  @{Name='chatbot';Port=50061;Module='services.chatbot.main'}
+  @{Name='chatbot';Port=50061;Module='services.chatbot.main'},
+  @{Name='hr';Port=50062;Module='services.hr.main'}
 )
 
 # Refuse to create duplicate service trees. Ports must be free before launch.
@@ -102,5 +103,5 @@ if($failed.Count -gt 0){
     Write-Host ('[FAILED] Could not start: '+($failed -join ', '))
     exit 1
 }
-Write-Host 'PROJECTX ALL 11 LISTENERS ONLINE.'
+Write-Host 'PROJECTX ALL 12 LISTENERS ONLINE (v2.1 incl. HR extension).'
 Write-Host 'Run global health: python .\scripts\test_all_services_health.py'

@@ -7,15 +7,19 @@ import "google/protobuf/timestamp.proto";
 
 service RendezvousService {
   rpc CreateScheduleSlot(CreateScheduleSlotRequest) returns (ScheduleSlotResponse);
+  rpc UpdateScheduleSlot(UpdateScheduleSlotRequest) returns (ScheduleSlotResponse);
+  rpc BlockScheduleSlot(BlockScheduleSlotRequest) returns (ScheduleSlotResponse);
   rpc ListAvailableSlots(ListAvailableSlotsRequest) returns (ListAvailableSlotsResponse);
   rpc CreateAppointment(CreateAppointmentRequest) returns (CreateAppointmentResponse);
   rpc GetAppointment(GetAppointmentRequest) returns (AppointmentResponse);
   rpc ListAgenda(ListAgendaRequest) returns (ListAgendaResponse);
+  rpc ListPatientAppointments(ListPatientAppointmentsRequest) returns (ListAgendaResponse);
   rpc ConfirmAppointment(ConfirmAppointmentRequest) returns (AppointmentResponse);
   rpc RescheduleAppointment(RescheduleAppointmentRequest) returns (AppointmentResponse);
   rpc CancelAppointment(CancelAppointmentRequest) returns (AppointmentResponse);
   rpc MarkCheckedIn(MarkCheckedInRequest) returns (AppointmentResponse);
   rpc CompleteAppointment(CompleteAppointmentRequest) returns (AppointmentResponse);
+  rpc MarkNoShow(MarkNoShowRequest) returns (AppointmentResponse);
   rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
 }
 
@@ -72,6 +76,8 @@ message Appointment {
   google.protobuf.Timestamp updated_at = 15;
   google.protobuf.Timestamp checked_in_at = 16;
   google.protobuf.Timestamp completed_at = 17;
+  google.protobuf.Timestamp reminder_due_at = 18;
+  google.protobuf.Timestamp reminder_sent_at = 19;
 }
 
 message CreateScheduleSlotRequest {
@@ -82,6 +88,19 @@ message CreateScheduleSlotRequest {
   string idempotency_key = 5;
 }
 message ScheduleSlotResponse { ScheduleSlot slot = 1; }
+
+message UpdateScheduleSlotRequest {
+  string slot_id = 1;
+  string provider_id = 2;
+  string service = 3;
+  google.protobuf.Timestamp start_at = 4;
+  google.protobuf.Timestamp end_at = 5;
+  string reason = 6;
+}
+message BlockScheduleSlotRequest {
+  string slot_id = 1;
+  string reason = 2;
+}
 
 message ListAvailableSlotsRequest {
   string provider_id = 1;
@@ -104,6 +123,7 @@ message CreateAppointmentRequest {
   string correlation_id = 5;
   bool request_reminder = 6;
   string reminder_recipient_user_id = 7;
+  int32 reminder_lead_minutes = 8;
 }
 message CreateAppointmentResponse {
   Appointment appointment = 1;
@@ -128,6 +148,12 @@ message ListAgendaResponse {
   repeated Appointment appointments = 1;
   int32 total = 2;
 }
+message ListPatientAppointmentsRequest {
+  string patient_id = 1;
+  AppointmentStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
 
 message ConfirmAppointmentRequest { string appointment_id = 1; }
 message RescheduleAppointmentRequest {
@@ -146,3 +172,7 @@ message MarkCheckedInRequest {
   string idempotency_key = 2;
 }
 message CompleteAppointmentRequest { string appointment_id = 1; }
+message MarkNoShowRequest {
+  string appointment_id = 1;
+  string reason = 2;
+}

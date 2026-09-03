@@ -5,44 +5,48 @@ package hospital.auth.v1;
 import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
-// ==========================================================
-// PROJECTX - AUTHENTICATION & NOTIFICATION SERVICE V1
-// Port: 50051
-// ==========================================================
-
+// PROJECTX - AUTHENTICATION, STAFF ACCESS & NOTIFICATION SERVICE V1
+// Port 50051
 service AuthService {
+  // Authentication methods. There is intentionally no public SignUp/Register RPC.
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc LoginWithQr(QrLoginRequest) returns (LoginResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (UserResponse);
+  // Self-service security/profile operations. These never allow role/job/status changes.
+  rpc ChangeMyPassword(ChangeMyPasswordRequest) returns (ChangeMyPasswordResponse);
+  rpc UpdateMyProfile(UpdateMyProfileRequest) returns (UserResponse);
 
-  rpc Login(LoginRequest)
-      returns (LoginResponse);
+  // Human Resources registers staff. The account remains blocked pending admin approval.
+  rpc RegisterStaff(RegisterStaffRequest) returns (UserResponse);
+  rpc ListPendingUsers(ListPendingUsersRequest) returns (ListUsersResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
 
-  rpc ValidateToken(ValidateTokenRequest)
-      returns (ValidateTokenResponse);
+  // Hospital administrator owns final access authorization and role assignment.
+  rpc ApproveUser(ApproveUserRequest) returns (ApproveUserResponse);
+  rpc RejectUser(RejectUserRequest) returns (UserResponse);
+  rpc DisableUser(DisableUserRequest) returns (UserResponse);
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+  rpc AssignRole(AssignRoleRequest) returns (UserResponse);
+  rpc UpdateStaffProfile(UpdateStaffProfileRequest) returns (UserResponse);
+  rpc SyncStaffEmploymentStatus(SyncStaffEmploymentStatusRequest) returns (UserResponse);
+  rpc ListStaffDirectory(ListStaffDirectoryRequest) returns (ListStaffDirectoryResponse);
+  rpc GetStaffDirectoryEntry(GetStaffDirectoryEntryRequest) returns (StaffDirectoryEntryResponse);
 
-  rpc GetCurrentUser(GetCurrentUserRequest)
-      returns (UserResponse);
+  // QR credential is issued only to an ACTIVE approved account.
+  rpc IssueQrCredential(IssueQrCredentialRequest) returns (QrCredentialResponse);
+  rpc RevokeQrCredential(RevokeQrCredentialRequest) returns (QrCredentialStatusResponse);
 
-  rpc CreateUser(CreateUserRequest)
-      returns (UserResponse);
+  rpc SendNotification(SendNotificationRequest) returns (NotificationResponse);
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc MarkNotificationRead(MarkNotificationReadRequest) returns (NotificationResponse);
 
-  rpc AssignRole(AssignRoleRequest)
-      returns (UserResponse);
+  // Server-internal notification operations. They require x-projectx-service-token metadata, never a user JWT.
+  rpc SendSystemNotification(SystemNotificationRequest) returns (NotificationResponse);
+  rpc ListSystemRecipientsByRole(SystemRecipientsByRoleRequest) returns (SystemRecipientsResponse);
 
-  rpc SendNotification(SendNotificationRequest)
-      returns (NotificationResponse);
-
-  rpc ListNotifications(ListNotificationsRequest)
-      returns (ListNotificationsResponse);
-
-  rpc MarkNotificationRead(MarkNotificationReadRequest)
-      returns (NotificationResponse);
-
-  rpc HealthCheck(hospital.common.v1.HealthRequest)
-      returns (hospital.common.v1.HealthResponse);
+  rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
 }
-
-// ==========================================================
-// ENUMS
-// ==========================================================
 
 enum NotificationStatus {
   NOTIFICATION_STATUS_UNSPECIFIED = 0;
@@ -54,15 +58,20 @@ enum UserStatus {
   USER_STATUS_UNSPECIFIED = 0;
   USER_STATUS_ACTIVE = 1;
   USER_STATUS_DISABLED = 2;
+  USER_STATUS_PENDING_APPROVAL = 3;
+  USER_STATUS_REJECTED = 4;
 }
 
-// ==========================================================
-// AUTH
-// ==========================================================
-
 message LoginRequest {
+  // Backward-compatible legacy field. Existing clients may keep sending username.
   string username = 1;
   string password = 2;
+  // Preferred v3.1 field: accepts either username or the staff email address.
+  string identifier = 3;
+}
+
+message QrLoginRequest {
+  string qr_payload = 1;
 }
 
 message LoginResponse {
@@ -70,20 +79,27 @@ message LoginResponse {
   string token_type = 2;
   google.protobuf.Timestamp expires_at = 3;
   User user = 4;
+  string dashboard_route = 5;
 }
 
-message ValidateTokenRequest {
-  string access_token = 1;
-}
-
+message ValidateTokenRequest { string access_token = 1; }
 message ValidateTokenResponse {
   bool valid = 1;
   User user = 2;
+  string dashboard_route = 3;
 }
 
-// ==========================================================
-// USERS
-// ==========================================================
+message StaffProfile {
+  string employee_number = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string phone = 5;
+  string department = 6;
+  string job_title = 7;
+  string registered_by_id = 8;
+  google.protobuf.Timestamp registered_at = 9;
+}
 
 message User {
   string id = 1;
@@ -92,12 +108,45 @@ message User {
   UserStatus status = 4;
   repeated string roles = 5;
   repeated string permissions = 6;
+  bool qr_enabled = 7;
+  StaffProfile staff_profile = 8;
 }
 
-message GetCurrentUserRequest {
-  string access_token = 1;
+message GetCurrentUserRequest { string access_token = 1; }
+message UserResponse { User user = 1; }
+
+message ChangeMyPasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
+message ChangeMyPasswordResponse {
+  bool changed = 1;
+  bool reauthentication_required = 2;
+  string message = 3;
 }
 
+message UpdateMyProfileRequest {
+  // Presence matters: omitted = unchanged; empty string = clear the field.
+  optional string email = 1;
+  optional string phone = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
+
+message RegisterStaffRequest {
+  string employee_number = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string phone = 5;
+  string department = 6;
+  string job_title = 7;
+  string username = 8;
+  string temporary_password = 9;
+  hospital.common.v1.AuditMetadata audit = 10;
+}
+
+// Restricted direct creation for administrators, e.g. creating the first HR manager.
 message CreateUserRequest {
   string username = 1;
   string password = 2;
@@ -106,19 +155,103 @@ message CreateUserRequest {
   hospital.common.v1.AuditMetadata audit = 5;
 }
 
-message UserResponse {
-  User user = 1;
+message ListPendingUsersRequest { hospital.common.v1.PageRequest page = 1; }
+message ListUsersRequest {
+  hospital.common.v1.PageRequest page = 1;
+  string status = 2;
+}
+message ListUsersResponse {
+  repeated User users = 1;
+  hospital.common.v1.PageInfo page = 2;
 }
 
+message ApproveUserRequest {
+  string user_id = 1;
+  repeated string role_codes = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
+message ApproveUserResponse {
+  User user = 1;
+  // Raw QR bearer credential returned only at issuance time so the admin can render/print it.
+  string qr_payload = 2;
+  google.protobuf.Timestamp qr_expires_at = 3;
+}
+message RejectUserRequest {
+  string user_id = 1;
+  string reason = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
+message DisableUserRequest {
+  string user_id = 1;
+  string reason = 2;
+  hospital.common.v1.AuditMetadata audit = 3;
+}
 message AssignRoleRequest {
   string user_id = 1;
   string role_code = 2;
   hospital.common.v1.AuditMetadata audit = 3;
 }
 
-// ==========================================================
-// NOTIFICATIONS
-// ==========================================================
+
+message UpdateStaffProfileRequest {
+  string user_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string phone = 5;
+  string department = 6;
+  string job_title = 7;
+  hospital.common.v1.AuditMetadata audit = 8;
+}
+
+message SyncStaffEmploymentStatusRequest {
+  string user_id = 1;
+  string employment_status = 2; // ACTIVE / SUSPENDED / INACTIVE / TERMINATED
+  string reason = 3;
+  hospital.common.v1.AuditMetadata audit = 4;
+}
+
+message StaffDirectoryEntry {
+  string user_id = 1;
+  string display_name = 2;
+  string employee_number = 3;
+  string department = 4;
+  string job_title = 5;
+  bool active = 6;
+  repeated string roles = 7;
+}
+message ListStaffDirectoryRequest {
+  string role_code = 1;
+  string search = 2;
+  bool active_only = 3;
+  hospital.common.v1.PageRequest page = 4;
+}
+message ListStaffDirectoryResponse {
+  repeated StaffDirectoryEntry entries = 1;
+  hospital.common.v1.PageInfo page = 2;
+}
+message GetStaffDirectoryEntryRequest { string user_id = 1; }
+message StaffDirectoryEntryResponse { StaffDirectoryEntry entry = 1; }
+
+message IssueQrCredentialRequest {
+  string user_id = 1;
+  hospital.common.v1.AuditMetadata audit = 2;
+}
+message QrCredentialResponse {
+  string user_id = 1;
+  string qr_payload = 2;
+  google.protobuf.Timestamp issued_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  bool active = 5;
+}
+message RevokeQrCredentialRequest {
+  string user_id = 1;
+  hospital.common.v1.AuditMetadata audit = 2;
+}
+message QrCredentialStatusResponse {
+  string user_id = 1;
+  bool active = 2;
+}
 
 message Notification {
   string id = 1;
@@ -130,7 +263,6 @@ message Notification {
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp read_at = 8;
 }
-
 message SendNotificationRequest {
   string recipient_id = 1;
   string type = 2;
@@ -138,22 +270,33 @@ message SendNotificationRequest {
   string body = 4;
   hospital.common.v1.AuditMetadata audit = 5;
 }
-
-message NotificationResponse {
-  Notification notification = 1;
-}
-
+message NotificationResponse { Notification notification = 1; }
 message ListNotificationsRequest {
   string recipient_id = 1;
   hospital.common.v1.PageRequest page = 2;
 }
-
 message ListNotificationsResponse {
   repeated Notification notifications = 1;
   hospital.common.v1.PageInfo page = 2;
 }
-
 message MarkNotificationReadRequest {
   string notification_id = 1;
   hospital.common.v1.AuditMetadata audit = 2;
 }
+
+
+message SystemNotificationRequest {
+  string recipient_id = 1;
+  string type = 2;
+  string title = 3;
+  string body = 4;
+  string source_service = 5;
+  string correlation_id = 6;
+}
+message SystemRecipientsByRoleRequest { string role_code = 1; }
+message SystemRecipient {
+  string user_id = 1;
+  string display_name = 2;
+  string employee_number = 3;
+}
+message SystemRecipientsResponse { repeated SystemRecipient recipients = 1; }

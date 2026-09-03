@@ -13,6 +13,8 @@ service MaterniteService {
   rpc RecordDelivery(RecordDeliveryRequest) returns (DeliveryResponse);
   rpc RegisterNewborn(RegisterNewbornRequest) returns (NewbornResponse);
   rpc GetMaternityRecord(GetMaternityRecordRequest) returns (MaternityRecordResponse);
+  rpc ListMaternityCases(ListMaternityCasesRequest) returns (ListMaternityCasesResponse);
+  rpc CloseMaternityCase(CloseMaternityCaseRequest) returns (MaternityRecordResponse);
   rpc HealthCheck(hospital.common.v1.HealthRequest) returns (hospital.common.v1.HealthResponse);
 }
 
@@ -234,3 +236,14 @@ message GetMaternityRecordRequest {
   string patient_id = 2;
 }
 message MaternityRecordResponse { MaternityRecord record = 1; bool replayed = 2; }
+message ListMaternityCasesRequest {
+  string patient_id = 1;
+  PregnancyStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message ListMaternityCasesResponse { repeated MaternityRecord records = 1; int32 total = 2; }
+message CloseMaternityCaseRequest {
+  string pregnancy_id = 1;
+  string reason = 2;
+}

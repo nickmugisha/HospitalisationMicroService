@@ -69,6 +69,9 @@ class Admission(HospitalisationBase):
     correlation_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
     created_by: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, index=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    approval_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     admitted_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     discharged_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     discharge_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -113,3 +116,17 @@ class BillingOutbox(HospitalisationBase):
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="BIF")
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="PENDING_DELIVERY", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
+
+
+class DoctorAssignment(HospitalisationBase):
+    __tablename__ = "doctor_assignments"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    admission_id: Mapped[str] = mapped_column(String(36), ForeignKey("admissions.id", ondelete="CASCADE"), nullable=False, index=True)
+    active_admission_key: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True, index=True)
+    doctor_user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    assigned_by: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="ACTIVE", index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False, unique=True, index=True)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now, index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, index=True)
+    completion_note: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -27,11 +27,8 @@ if _version_not_supported:
 
 
 class AuthServiceStub:
-    """==========================================================
-    PROJECTX - AUTHENTICATION & NOTIFICATION SERVICE V1
-    Port: 50051
-    ==========================================================
-
+    """PROJECTX - AUTHENTICATION, STAFF ACCESS & NOTIFICATION SERVICE V1
+    Port 50051
     """
 
     def __init__(self, channel):
@@ -45,6 +42,11 @@ class AuthServiceStub:
                 request_serializer=auth_dot_v1_dot_auth__pb2.LoginRequest.SerializeToString,
                 response_deserializer=auth_dot_v1_dot_auth__pb2.LoginResponse.FromString,
                 _registered_method=True)
+        self.LoginWithQr = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/LoginWithQr',
+                request_serializer=auth_dot_v1_dot_auth__pb2.QrLoginRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.LoginResponse.FromString,
+                _registered_method=True)
         self.ValidateToken = channel.unary_unary(
                 '/hospital.auth.v1.AuthService/ValidateToken',
                 request_serializer=auth_dot_v1_dot_auth__pb2.ValidateTokenRequest.SerializeToString,
@@ -53,6 +55,46 @@ class AuthServiceStub:
         self.GetCurrentUser = channel.unary_unary(
                 '/hospital.auth.v1.AuthService/GetCurrentUser',
                 request_serializer=auth_dot_v1_dot_auth__pb2.GetCurrentUserRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.ChangeMyPassword = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ChangeMyPassword',
+                request_serializer=auth_dot_v1_dot_auth__pb2.ChangeMyPasswordRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.ChangeMyPasswordResponse.FromString,
+                _registered_method=True)
+        self.UpdateMyProfile = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/UpdateMyProfile',
+                request_serializer=auth_dot_v1_dot_auth__pb2.UpdateMyProfileRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.RegisterStaff = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/RegisterStaff',
+                request_serializer=auth_dot_v1_dot_auth__pb2.RegisterStaffRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.ListPendingUsers = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ListPendingUsers',
+                request_serializer=auth_dot_v1_dot_auth__pb2.ListPendingUsersRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.ListUsersResponse.FromString,
+                _registered_method=True)
+        self.ListUsers = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ListUsers',
+                request_serializer=auth_dot_v1_dot_auth__pb2.ListUsersRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.ListUsersResponse.FromString,
+                _registered_method=True)
+        self.ApproveUser = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ApproveUser',
+                request_serializer=auth_dot_v1_dot_auth__pb2.ApproveUserRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.ApproveUserResponse.FromString,
+                _registered_method=True)
+        self.RejectUser = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/RejectUser',
+                request_serializer=auth_dot_v1_dot_auth__pb2.RejectUserRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.DisableUser = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/DisableUser',
+                request_serializer=auth_dot_v1_dot_auth__pb2.DisableUserRequest.SerializeToString,
                 response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.CreateUser = channel.unary_unary(
@@ -64,6 +106,36 @@ class AuthServiceStub:
                 '/hospital.auth.v1.AuthService/AssignRole',
                 request_serializer=auth_dot_v1_dot_auth__pb2.AssignRoleRequest.SerializeToString,
                 response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.UpdateStaffProfile = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/UpdateStaffProfile',
+                request_serializer=auth_dot_v1_dot_auth__pb2.UpdateStaffProfileRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.SyncStaffEmploymentStatus = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/SyncStaffEmploymentStatus',
+                request_serializer=auth_dot_v1_dot_auth__pb2.SyncStaffEmploymentStatusRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.ListStaffDirectory = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ListStaffDirectory',
+                request_serializer=auth_dot_v1_dot_auth__pb2.ListStaffDirectoryRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.ListStaffDirectoryResponse.FromString,
+                _registered_method=True)
+        self.GetStaffDirectoryEntry = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/GetStaffDirectoryEntry',
+                request_serializer=auth_dot_v1_dot_auth__pb2.GetStaffDirectoryEntryRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.StaffDirectoryEntryResponse.FromString,
+                _registered_method=True)
+        self.IssueQrCredential = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/IssueQrCredential',
+                request_serializer=auth_dot_v1_dot_auth__pb2.IssueQrCredentialRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.QrCredentialResponse.FromString,
+                _registered_method=True)
+        self.RevokeQrCredential = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/RevokeQrCredential',
+                request_serializer=auth_dot_v1_dot_auth__pb2.RevokeQrCredentialRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.QrCredentialStatusResponse.FromString,
                 _registered_method=True)
         self.SendNotification = channel.unary_unary(
                 '/hospital.auth.v1.AuthService/SendNotification',
@@ -80,6 +152,16 @@ class AuthServiceStub:
                 request_serializer=auth_dot_v1_dot_auth__pb2.MarkNotificationReadRequest.SerializeToString,
                 response_deserializer=auth_dot_v1_dot_auth__pb2.NotificationResponse.FromString,
                 _registered_method=True)
+        self.SendSystemNotification = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/SendSystemNotification',
+                request_serializer=auth_dot_v1_dot_auth__pb2.SystemNotificationRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.NotificationResponse.FromString,
+                _registered_method=True)
+        self.ListSystemRecipientsByRole = channel.unary_unary(
+                '/hospital.auth.v1.AuthService/ListSystemRecipientsByRole',
+                request_serializer=auth_dot_v1_dot_auth__pb2.SystemRecipientsByRoleRequest.SerializeToString,
+                response_deserializer=auth_dot_v1_dot_auth__pb2.SystemRecipientsResponse.FromString,
+                _registered_method=True)
         self.HealthCheck = channel.unary_unary(
                 '/hospital.auth.v1.AuthService/HealthCheck',
                 request_serializer=common_dot_v1_dot_common__pb2.HealthRequest.SerializeToString,
@@ -88,14 +170,18 @@ class AuthServiceStub:
 
 
 class AuthServiceServicer:
-    """==========================================================
-    PROJECTX - AUTHENTICATION & NOTIFICATION SERVICE V1
-    Port: 50051
-    ==========================================================
-
+    """PROJECTX - AUTHENTICATION, STAFF ACCESS & NOTIFICATION SERVICE V1
+    Port 50051
     """
 
     def Login(self, request, context):
+        """Authentication methods. There is intentionally no public SignUp/Register RPC.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LoginWithQr(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -113,6 +199,57 @@ class AuthServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ChangeMyPassword(self, request, context):
+        """Self-service security/profile operations. These never allow role/job/status changes.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateMyProfile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RegisterStaff(self, request, context):
+        """Human Resources registers staff. The account remains blocked pending admin approval.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPendingUsers(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListUsers(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ApproveUser(self, request, context):
+        """Hospital administrator owns final access authorization and role assignment.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RejectUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DisableUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CreateUser(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -120,6 +257,43 @@ class AuthServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
     def AssignRole(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateStaffProfile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SyncStaffEmploymentStatus(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListStaffDirectory(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetStaffDirectoryEntry(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def IssueQrCredential(self, request, context):
+        """QR credential is issued only to an ACTIVE approved account.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RevokeQrCredential(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -143,6 +317,19 @@ class AuthServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SendSystemNotification(self, request, context):
+        """Server-internal notification operations. They require x-projectx-service-token metadata, never a user JWT.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListSystemRecipientsByRole(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def HealthCheck(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -157,6 +344,11 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     request_deserializer=auth_dot_v1_dot_auth__pb2.LoginRequest.FromString,
                     response_serializer=auth_dot_v1_dot_auth__pb2.LoginResponse.SerializeToString,
             ),
+            'LoginWithQr': grpc.unary_unary_rpc_method_handler(
+                    servicer.LoginWithQr,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.QrLoginRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.LoginResponse.SerializeToString,
+            ),
             'ValidateToken': grpc.unary_unary_rpc_method_handler(
                     servicer.ValidateToken,
                     request_deserializer=auth_dot_v1_dot_auth__pb2.ValidateTokenRequest.FromString,
@@ -165,6 +357,46 @@ def add_AuthServiceServicer_to_server(servicer, server):
             'GetCurrentUser': grpc.unary_unary_rpc_method_handler(
                     servicer.GetCurrentUser,
                     request_deserializer=auth_dot_v1_dot_auth__pb2.GetCurrentUserRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'ChangeMyPassword': grpc.unary_unary_rpc_method_handler(
+                    servicer.ChangeMyPassword,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.ChangeMyPasswordRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.ChangeMyPasswordResponse.SerializeToString,
+            ),
+            'UpdateMyProfile': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateMyProfile,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.UpdateMyProfileRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'RegisterStaff': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterStaff,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.RegisterStaffRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'ListPendingUsers': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPendingUsers,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.ListPendingUsersRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.ListUsersResponse.SerializeToString,
+            ),
+            'ListUsers': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListUsers,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.ListUsersRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.ListUsersResponse.SerializeToString,
+            ),
+            'ApproveUser': grpc.unary_unary_rpc_method_handler(
+                    servicer.ApproveUser,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.ApproveUserRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.ApproveUserResponse.SerializeToString,
+            ),
+            'RejectUser': grpc.unary_unary_rpc_method_handler(
+                    servicer.RejectUser,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.RejectUserRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'DisableUser': grpc.unary_unary_rpc_method_handler(
+                    servicer.DisableUser,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.DisableUserRequest.FromString,
                     response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
             ),
             'CreateUser': grpc.unary_unary_rpc_method_handler(
@@ -176,6 +408,36 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     servicer.AssignRole,
                     request_deserializer=auth_dot_v1_dot_auth__pb2.AssignRoleRequest.FromString,
                     response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'UpdateStaffProfile': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateStaffProfile,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.UpdateStaffProfileRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'SyncStaffEmploymentStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.SyncStaffEmploymentStatus,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.SyncStaffEmploymentStatusRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.UserResponse.SerializeToString,
+            ),
+            'ListStaffDirectory': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListStaffDirectory,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.ListStaffDirectoryRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.ListStaffDirectoryResponse.SerializeToString,
+            ),
+            'GetStaffDirectoryEntry': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStaffDirectoryEntry,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.GetStaffDirectoryEntryRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.StaffDirectoryEntryResponse.SerializeToString,
+            ),
+            'IssueQrCredential': grpc.unary_unary_rpc_method_handler(
+                    servicer.IssueQrCredential,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.IssueQrCredentialRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.QrCredentialResponse.SerializeToString,
+            ),
+            'RevokeQrCredential': grpc.unary_unary_rpc_method_handler(
+                    servicer.RevokeQrCredential,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.RevokeQrCredentialRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.QrCredentialStatusResponse.SerializeToString,
             ),
             'SendNotification': grpc.unary_unary_rpc_method_handler(
                     servicer.SendNotification,
@@ -192,6 +454,16 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     request_deserializer=auth_dot_v1_dot_auth__pb2.MarkNotificationReadRequest.FromString,
                     response_serializer=auth_dot_v1_dot_auth__pb2.NotificationResponse.SerializeToString,
             ),
+            'SendSystemNotification': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendSystemNotification,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.SystemNotificationRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.NotificationResponse.SerializeToString,
+            ),
+            'ListSystemRecipientsByRole': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListSystemRecipientsByRole,
+                    request_deserializer=auth_dot_v1_dot_auth__pb2.SystemRecipientsByRoleRequest.FromString,
+                    response_serializer=auth_dot_v1_dot_auth__pb2.SystemRecipientsResponse.SerializeToString,
+            ),
             'HealthCheck': grpc.unary_unary_rpc_method_handler(
                     servicer.HealthCheck,
                     request_deserializer=common_dot_v1_dot_common__pb2.HealthRequest.FromString,
@@ -206,11 +478,8 @@ def add_AuthServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AuthService:
-    """==========================================================
-    PROJECTX - AUTHENTICATION & NOTIFICATION SERVICE V1
-    Port: 50051
-    ==========================================================
-
+    """PROJECTX - AUTHENTICATION, STAFF ACCESS & NOTIFICATION SERVICE V1
+    Port 50051
     """
 
     @staticmethod
@@ -229,6 +498,33 @@ class AuthService:
             target,
             '/hospital.auth.v1.AuthService/Login',
             auth_dot_v1_dot_auth__pb2.LoginRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.LoginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def LoginWithQr(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/LoginWithQr',
+            auth_dot_v1_dot_auth__pb2.QrLoginRequest.SerializeToString,
             auth_dot_v1_dot_auth__pb2.LoginResponse.FromString,
             options,
             channel_credentials,
@@ -295,6 +591,222 @@ class AuthService:
             _registered_method=True)
 
     @staticmethod
+    def ChangeMyPassword(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ChangeMyPassword',
+            auth_dot_v1_dot_auth__pb2.ChangeMyPasswordRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.ChangeMyPasswordResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateMyProfile(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/UpdateMyProfile',
+            auth_dot_v1_dot_auth__pb2.UpdateMyProfileRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RegisterStaff(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/RegisterStaff',
+            auth_dot_v1_dot_auth__pb2.RegisterStaffRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListPendingUsers(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ListPendingUsers',
+            auth_dot_v1_dot_auth__pb2.ListPendingUsersRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.ListUsersResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListUsers(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ListUsers',
+            auth_dot_v1_dot_auth__pb2.ListUsersRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.ListUsersResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ApproveUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ApproveUser',
+            auth_dot_v1_dot_auth__pb2.ApproveUserRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.ApproveUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RejectUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/RejectUser',
+            auth_dot_v1_dot_auth__pb2.RejectUserRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DisableUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/DisableUser',
+            auth_dot_v1_dot_auth__pb2.DisableUserRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def CreateUser(request,
             target,
             options=(),
@@ -338,6 +850,168 @@ class AuthService:
             '/hospital.auth.v1.AuthService/AssignRole',
             auth_dot_v1_dot_auth__pb2.AssignRoleRequest.SerializeToString,
             auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateStaffProfile(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/UpdateStaffProfile',
+            auth_dot_v1_dot_auth__pb2.UpdateStaffProfileRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SyncStaffEmploymentStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/SyncStaffEmploymentStatus',
+            auth_dot_v1_dot_auth__pb2.SyncStaffEmploymentStatusRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListStaffDirectory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ListStaffDirectory',
+            auth_dot_v1_dot_auth__pb2.ListStaffDirectoryRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.ListStaffDirectoryResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetStaffDirectoryEntry(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/GetStaffDirectoryEntry',
+            auth_dot_v1_dot_auth__pb2.GetStaffDirectoryEntryRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.StaffDirectoryEntryResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def IssueQrCredential(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/IssueQrCredential',
+            auth_dot_v1_dot_auth__pb2.IssueQrCredentialRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.QrCredentialResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RevokeQrCredential(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/RevokeQrCredential',
+            auth_dot_v1_dot_auth__pb2.RevokeQrCredentialRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.QrCredentialStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -419,6 +1093,60 @@ class AuthService:
             '/hospital.auth.v1.AuthService/MarkNotificationRead',
             auth_dot_v1_dot_auth__pb2.MarkNotificationReadRequest.SerializeToString,
             auth_dot_v1_dot_auth__pb2.NotificationResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SendSystemNotification(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/SendSystemNotification',
+            auth_dot_v1_dot_auth__pb2.SystemNotificationRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.NotificationResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListSystemRecipientsByRole(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.auth.v1.AuthService/ListSystemRecipientsByRole',
+            auth_dot_v1_dot_auth__pb2.SystemRecipientsByRoleRequest.SerializeToString,
+            auth_dot_v1_dot_auth__pb2.SystemRecipientsResponse.FromString,
             options,
             channel_credentials,
             insecure,

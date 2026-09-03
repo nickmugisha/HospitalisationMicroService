@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
@@ -13,10 +14,11 @@ from sqlalchemy.orm import selectinload
 from billing.v1 import billing_pb2, billing_pb2_grpc
 from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat
+from services.common.notifications import list_role_recipients, send_system_notification
 from pharmacie.v1 import pharmacie_pb2, pharmacie_pb2_grpc
 from database.pharmacie_session import PharmacieSessionLocal, engine
 from services.common.auth_guard import require_permission
-from services.pharmacie.config import BILLING_GRPC_TARGET, SERVICE_VERSION
+from services.pharmacie.config import AUTH_GRPC_TARGET, BILLING_GRPC_TARGET, SERVICE_VERSION
 from services.pharmacie.models import (
     Batch,
     BillingOutbox,
@@ -30,6 +32,8 @@ from services.pharmacie.models import (
     PurchaseOrderItem,
     PurchaseReceipt,
     StockMovement,
+    StockAlertDispatch,
+    Supplier,
 )
 from services.pharmacie.repository import (
     get_dispensation,
@@ -40,6 +44,9 @@ from services.pharmacie.repository import (
     get_purchase_order_by_key,
     get_stock_batches,
     get_supplier_by_code,
+    list_prescriptions,
+    list_purchase_orders,
+    list_suppliers,
     search_medicines,
 )
 
@@ -62,6 +69,13 @@ BILLING_DB_TO_PROTO = {
     "DELIVERED": pharmacie_pb2.BILLING_CHARGE_STATUS_DELIVERED,
     "FAILED": pharmacie_pb2.BILLING_CHARGE_STATUS_FAILED,
 }
+PO_STATUS_PROTO_TO_DB = {
+    pharmacie_pb2.PURCHASE_ORDER_STATUS_ORDERED: "ORDERED",
+    pharmacie_pb2.PURCHASE_ORDER_STATUS_PARTIALLY_RECEIVED: "PARTIALLY_RECEIVED",
+    pharmacie_pb2.PURCHASE_ORDER_STATUS_RECEIVED: "RECEIVED",
+    pharmacie_pb2.PURCHASE_ORDER_STATUS_CANCELLED: "CANCELLED",
+}
+
 PO_STATUS_DB_TO_PROTO = {
     "ORDERED": pharmacie_pb2.PURCHASE_ORDER_STATUS_ORDERED,
     "PARTIALLY_RECEIVED": pharmacie_pb2.PURCHASE_ORDER_STATUS_PARTIALLY_RECEIVED,
@@ -154,6 +168,12 @@ def medicine_to_proto(item: Medicine):
     )
 
 
+def supplier_to_proto(item: Supplier):
+    return pharmacie_pb2.Supplier(
+        id=item.id, code=item.code, name=item.name, phone=item.phone or "", email=item.email or "", active=item.active
+    )
+
+
 def batch_to_proto(item: Batch):
     return pharmacie_pb2.Batch(
         id=item.id,
@@ -188,6 +208,15 @@ def prescription_to_proto(item: PrescriptionInbox):
                 frequency=line.frequency,
                 duration=line.duration,
                 instructions=line.instructions or "",
+                medicine_source=(
+                    pharmacie_pb2.PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL
+                    if line.medicine_source == "EXTERNAL"
+                    else pharmacie_pb2.PRESCRIPTION_MEDICINE_SOURCE_HOSPITAL_CATALOG
+                ),
+                medicine_name=line.medicine_name or line.medicine_ref,
+                medicine_form=line.medicine_form or "",
+                medicine_strength=line.medicine_strength or "",
+                dispensable_by_hospital=(line.medicine_source != "EXTERNAL"),
             )
             for line in item.items
         ],
@@ -272,9 +301,117 @@ def _set_health_enum(response, desired: str) -> None:
 def build_health_response(desired: str, message: str):
     return build_health_response_compat("pharmacie", desired, message, SERVICE_VERSION)
 
+def build_stock_alerts(session, days: int):
+    days = min(max(int(days or 30), 1), 365)
+    today = date.today(); limit_date = today + timedelta(days=days)
+    medicines = session.scalars(select(Medicine).options(selectinload(Medicine.batches)).where(Medicine.active.is_(True))).all()
+    alerts=[]
+    for medicine in medicines:
+        valid_total=sum(b.quantity_available for b in medicine.batches if b.expiry_date > today and b.quantity_available > 0)
+        if valid_total == 0:
+            alerts.append(pharmacie_pb2.StockAlert(type=pharmacie_pb2.STOCK_ALERT_TYPE_OUT_OF_STOCK,medicine_id=medicine.id,medicine_code=medicine.code,medicine_name=medicine.name,quantity=0,message="No usable stock available."))
+        elif valid_total <= medicine.reorder_level:
+            alerts.append(pharmacie_pb2.StockAlert(type=pharmacie_pb2.STOCK_ALERT_TYPE_LOW_STOCK,medicine_id=medicine.id,medicine_code=medicine.code,medicine_name=medicine.name,quantity=valid_total,message=f"Usable stock is at or below reorder level ({medicine.reorder_level})."))
+        for batch in medicine.batches:
+            if batch.quantity_available <= 0: continue
+            if batch.expiry_date <= today:
+                alert_type=pharmacie_pb2.STOCK_ALERT_TYPE_EXPIRED; message="Batch is expired and excluded from dispensing."
+            elif batch.expiry_date <= limit_date:
+                alert_type=pharmacie_pb2.STOCK_ALERT_TYPE_EXPIRING; message=f"Batch expires within {days} days."
+            else: continue
+            alerts.append(pharmacie_pb2.StockAlert(type=alert_type,medicine_id=medicine.id,medicine_code=medicine.code,medicine_name=medicine.name,batch_id=batch.id,batch_number=batch.batch_number,quantity=batch.quantity_available,expiry_date=batch.expiry_date.isoformat(),message=message))
+    return alerts
+
+
+def stock_alert_fingerprint(alert) -> str:
+    # Use a fixed-size ASCII digest rather than indexing a 255-character
+    # utf8mb4 string. This keeps the daily de-duplication key well below
+    # MySQL/MariaDB index-size limits across supported storage-engine setups.
+    raw = f"{int(alert.type)}:{alert.medicine_id}:{alert.batch_id or '-'}:{alert.message}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def dispatch_stock_alert_notifications_once(days_to_expiry: int = 30) -> tuple[int,int,int]:
+    session=PharmacieSessionLocal()
+    try:
+        alerts=build_stock_alerts(session,days_to_expiry)
+        recipients=sorted(set(
+            list_role_recipients(auth_target=AUTH_GRPC_TARGET,role_code="PHARMACIEN") +
+            list_role_recipients(auth_target=AUTH_GRPC_TARGET,role_code="RESPONSABLE_LOGISTIQUE")
+        ))
+        sent=skipped=0; today=date.today()
+        for alert in alerts:
+            fp=stock_alert_fingerprint(alert)
+            if session.scalar(select(StockAlertDispatch).where(StockAlertDispatch.fingerprint==fp,StockAlertDispatch.dispatched_on==today)) is not None:
+                skipped+=1; continue
+            delivered=0
+            for recipient in recipients:
+                if send_system_notification(auth_target=AUTH_GRPC_TARGET,recipient_id=recipient,notification_type="STOCK_ALERT",title="Alerte stock / Stock alert",body=f"{alert.medicine_name}: {alert.message}",source_service="pharmacie"):
+                    delivered+=1; sent+=1
+            if delivered:
+                session.add(StockAlertDispatch(fingerprint=fp,alert_type=pharmacie_pb2.StockAlertType.Name(alert.type),medicine_id=alert.medicine_id,batch_id=alert.batch_id or None,dispatched_on=today,recipient_count=delivered))
+        session.commit()
+        return len(alerts),sent,skipped
+    except IntegrityError:
+        session.rollback()
+        logger.info("stock alert dispatch race detected; another worker/request already recorded alerts")
+        return 0,0,0
+    except Exception:
+        session.rollback(); logger.exception("automatic stock alert dispatch failed"); return 0,0,0
+    finally: session.close()
+
+
 class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
+    def CreateMedicine(self, request, context):
+        actor = require_permission(context, "pharmacy.catalog.manage")
+        code=request.code.strip().upper(); name=request.name.strip(); form=request.form.strip(); strength=request.strength.strip(); unit=request.unit.strip()
+        if not all([code,name,form,strength,unit]):
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"code, name, form, strength and unit are required.")
+        if request.sale_price_minor < 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"Price cannot be negative.")
+        if request.reorder_level < 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"Reorder level cannot be negative.")
+        session=PharmacieSessionLocal()
+        try:
+            if get_medicine_by_ref(session,code) is not None:
+                context.abort(grpc.StatusCode.ALREADY_EXISTS,"Medicine code already exists.")
+            item=Medicine(code=code,name=name,form=form,strength=strength,unit=unit,sale_price_minor=request.sale_price_minor,
+                          currency=request.currency.strip().upper() or "BIF",reorder_level=request.reorder_level,
+                          active=(request.active if request.HasField("active") else True))
+            session.add(item); session.commit(); session.refresh(item)
+            logger.info("rpc=CreateMedicine peer=%s actor=%s medicine=%s outcome=OK",context.peer(),actor.id,item.code)
+            return pharmacie_pb2.MedicineResponse(medicine=medicine_to_proto(item))
+        except IntegrityError:
+            session.rollback(); context.abort(grpc.StatusCode.ALREADY_EXISTS,"Medicine code already exists.")
+        finally: session.close()
+
+    def UpdateMedicine(self, request, context):
+        actor=require_permission(context,"pharmacy.catalog.manage")
+        ref=request.medicine_ref.strip()
+        if not ref: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"medicine_ref is required.")
+        if request.HasField("sale_price_minor") and request.sale_price_minor < 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"Price cannot be negative.")
+        if request.HasField("reorder_level") and request.reorder_level < 0:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,"Reorder level cannot be negative.")
+        session=PharmacieSessionLocal()
+        try:
+            item=get_medicine_by_ref(session,ref)
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Medicine not found.")
+            if request.name.strip(): item.name=request.name.strip()
+            if request.form.strip(): item.form=request.form.strip()
+            if request.strength.strip(): item.strength=request.strength.strip()
+            if request.unit.strip(): item.unit=request.unit.strip()
+            if request.HasField("sale_price_minor"): item.sale_price_minor=request.sale_price_minor
+            item.currency=request.currency.strip().upper() or item.currency
+            if request.HasField("reorder_level"): item.reorder_level=request.reorder_level
+            if request.HasField("active"): item.active=request.active
+            session.commit(); session.refresh(item)
+            logger.info("rpc=UpdateMedicine peer=%s actor=%s medicine=%s outcome=OK",context.peer(),actor.id,item.code)
+            return pharmacie_pb2.MedicineResponse(medicine=medicine_to_proto(item))
+        finally: session.close()
+
     def SearchMedicines(self, request, context):
-        actor = require_permission(context, "pharmacy.stock.read")
+        actor = require_permission(context, "pharmacy.catalog.read")
         limit, offset = page_values(request.limit, request.offset, context)
         session = PharmacieSessionLocal()
         try:
@@ -366,17 +503,49 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
                 status="ISSUED",
                 correlation_id=correlation_id,
             )
+            hospital_line_count = 0
             for raw in request.items:
                 medicine_ref = raw.medicine_ref.strip().upper()
-                if not medicine_ref or not raw.dose.strip() or not raw.frequency.strip() or not raw.duration.strip():
-                    context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Every prescription line requires medicine_ref, dose, frequency and duration.")
+                medicine_name = raw.medicine_name.strip()
+                if not raw.dose.strip() or not raw.frequency.strip() or not raw.duration.strip():
+                    context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Every prescription line requires dose, frequency and duration.")
+                source = (
+                    "EXTERNAL"
+                    if raw.medicine_source == pharmacie_pb2.PRESCRIPTION_MEDICINE_SOURCE_EXTERNAL
+                    else "HOSPITAL_CATALOG"
+                )
+                if source == "HOSPITAL_CATALOG":
+                    if not medicine_ref:
+                        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Hospital prescription line requires medicine_ref.")
+                    medicine = get_medicine_by_ref(session, medicine_ref)
+                    if medicine is None or not medicine.active:
+                        context.abort(grpc.StatusCode.NOT_FOUND, f"Active hospital medicine not found: {medicine_ref}")
+                    medicine_ref = medicine.code
+                    medicine_name = medicine.name
+                    medicine_form = medicine.form
+                    medicine_strength = medicine.strength
+                    hospital_line_count += 1
+                else:
+                    if not medicine_ref:
+                        medicine_ref = f"EXT-{uuid.uuid4().hex[:12].upper()}"
+                    if not medicine_name:
+                        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "External prescription line requires medicine_name.")
+                    medicine_form = raw.medicine_form.strip()
+                    medicine_strength = raw.medicine_strength.strip()
                 item.items.append(PrescriptionInboxItem(
                     medicine_ref=medicine_ref,
+                    medicine_source=source,
+                    medicine_name=medicine_name,
+                    medicine_form=medicine_form or None,
+                    medicine_strength=medicine_strength or None,
                     dose=raw.dose.strip(),
                     frequency=raw.frequency.strip(),
                     duration=raw.duration.strip(),
                     instructions=raw.instructions.strip() or None,
                 ))
+            # From the hospital Pharmacy viewpoint an external-only prescription has nothing to dispense.
+            if hospital_line_count == 0:
+                item.status = "COMPLETED"
             session.add(item)
             session.commit()
             item = get_prescription(session, prescription_id)
@@ -390,6 +559,29 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
             context.abort(grpc.StatusCode.ALREADY_EXISTS, "Prescription already exposed with conflicting data.")
         finally:
             session.close()
+
+    def ListPrescriptionInbox(self, request, context):
+        require_permission(context,"pharmacy.prescription.read")
+        status=""
+        if request.status != pharmacie_pb2.PRESCRIPTION_INBOX_STATUS_UNSPECIFIED:
+            status=pharmacie_pb2.PrescriptionInboxStatus.Name(request.status).replace("PRESCRIPTION_INBOX_STATUS_","")
+        limit,offset=page_values(request.limit,request.offset,context)
+        session=PharmacieSessionLocal()
+        try:
+            items,total=list_prescriptions(session,patient_id=request.patient_id,status=status,limit=limit,offset=offset)
+            return pharmacie_pb2.ListPrescriptionInboxResponse(prescriptions=[prescription_to_proto(x) for x in items],total=total)
+        finally: session.close()
+
+    def GetPrescriptionInbox(self, request, context):
+        require_permission(context,"pharmacy.prescription.read")
+        pid=request.prescription_id.strip()
+        if not pid: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"prescription_id is required.")
+        session=PharmacieSessionLocal()
+        try:
+            item=get_prescription(session,pid)
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Prescription not found in Pharmacy inbox.")
+            return pharmacie_pb2.PrescriptionInboxResponse(prescription=prescription_to_proto(item))
+        finally: session.close()
 
     def DispensePrescription(self, request, context):
         actor = require_permission(context, "pharmacy.dispense")
@@ -419,7 +611,11 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
             if prescription.status in ("CANCELLED", "COMPLETED"):
                 context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Prescription status does not allow dispensing: {prescription.status}")
 
-            allowed_refs = {line.medicine_ref.upper() for line in prescription.items}
+            line_by_ref = {line.medicine_ref.upper(): line for line in prescription.items}
+            external_refs = {ref for ref, line in line_by_ref.items() if line.medicine_source == "EXTERNAL"}
+            allowed_refs = {ref for ref, line in line_by_ref.items() if line.medicine_source != "EXTERNAL"}
+            if not allowed_refs:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Prescription contains no medicine dispensable by the hospital pharmacy.")
             requested_refs = set()
             resolved = []
             for raw in request.items:
@@ -429,6 +625,8 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
                 if ref in requested_refs:
                     context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Duplicate medicine_ref in request: {ref}")
                 requested_refs.add(ref)
+                if ref in external_refs:
+                    context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"External medicine is not supplied from hospital stock: {ref}")
                 if ref not in allowed_refs:
                     context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Medicine is not present in prescription: {ref}")
                 medicine = get_medicine_by_ref(session, ref)
@@ -546,64 +744,60 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
             session.close()
 
     def ListStockAlerts(self, request, context):
-        actor = require_permission(context, "pharmacy.stock.read")
-        days = request.days_to_expiry if request.days_to_expiry > 0 else 30
-        days = min(days, 365)
-        today = date.today()
-        limit_date = today + timedelta(days=days)
-        session = PharmacieSessionLocal()
+        actor=require_permission(context, "pharmacy.stock.read")
+        session=PharmacieSessionLocal()
         try:
-            medicines = session.scalars(select(Medicine).options(selectinload(Medicine.batches)).where(Medicine.active.is_(True))).all()
-            alerts = []
-            for medicine in medicines:
-                valid_total = sum(b.quantity_available for b in medicine.batches if b.expiry_date > today and b.quantity_available > 0)
-                if valid_total == 0:
-                    alerts.append(pharmacie_pb2.StockAlert(
-                        type=pharmacie_pb2.STOCK_ALERT_TYPE_OUT_OF_STOCK,
-                        medicine_id=medicine.id,
-                        medicine_code=medicine.code,
-                        medicine_name=medicine.name,
-                        quantity=0,
-                        message="No usable stock available.",
-                    ))
-                elif valid_total <= medicine.reorder_level:
-                    alerts.append(pharmacie_pb2.StockAlert(
-                        type=pharmacie_pb2.STOCK_ALERT_TYPE_LOW_STOCK,
-                        medicine_id=medicine.id,
-                        medicine_code=medicine.code,
-                        medicine_name=medicine.name,
-                        quantity=valid_total,
-                        message=f"Usable stock is at or below reorder level ({medicine.reorder_level}).",
-                    ))
-                for batch in medicine.batches:
-                    if batch.quantity_available <= 0:
-                        continue
-                    if batch.expiry_date <= today:
-                        alert_type = pharmacie_pb2.STOCK_ALERT_TYPE_EXPIRED
-                        message = "Batch is expired and excluded from dispensing."
-                    elif batch.expiry_date <= limit_date:
-                        alert_type = pharmacie_pb2.STOCK_ALERT_TYPE_EXPIRING
-                        message = f"Batch expires within {days} days."
-                    else:
-                        continue
-                    alerts.append(pharmacie_pb2.StockAlert(
-                        type=alert_type,
-                        medicine_id=medicine.id,
-                        medicine_code=medicine.code,
-                        medicine_name=medicine.name,
-                        batch_id=batch.id,
-                        batch_number=batch.batch_number,
-                        quantity=batch.quantity_available,
-                        expiry_date=batch.expiry_date.isoformat(),
-                        message=message,
-                    ))
-            logger.info("rpc=ListStockAlerts peer=%s actor=%s count=%s outcome=OK", context.peer(), actor.id, len(alerts))
-            return pharmacie_pb2.ListStockAlertsResponse(alerts=alerts, total=len(alerts))
-        finally:
-            session.close()
+            alerts=build_stock_alerts(session, request.days_to_expiry or 30)
+            logger.info("rpc=ListStockAlerts peer=%s actor=%s count=%s outcome=OK",context.peer(),actor.id,len(alerts))
+            return pharmacie_pb2.ListStockAlertsResponse(alerts=alerts,total=len(alerts))
+        finally: session.close()
+
+    def DispatchStockAlertNotifications(self, request, context):
+        actor=require_permission(context, "pharmacy.stock.manage")
+        found,sent,skipped=dispatch_stock_alert_notifications_once(request.days_to_expiry or 30)
+        logger.info("rpc=DispatchStockAlertNotifications peer=%s actor=%s alerts=%s sent=%s skipped=%s outcome=OK",context.peer(),actor.id,found,sent,skipped)
+        return pharmacie_pb2.DispatchStockAlertNotificationsResponse(alerts_found=found,notifications_sent=sent,alerts_skipped_as_already_dispatched_today=skipped)
+
+    def CreateSupplier(self, request, context):
+        actor=require_permission(context,"pharmacy.procurement.manage")
+        code=request.code.strip().upper(); name=request.name.strip()
+        if not code or not name: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"supplier code and name are required.")
+        session=PharmacieSessionLocal()
+        try:
+            if get_supplier_by_code(session,code): context.abort(grpc.StatusCode.ALREADY_EXISTS,"Supplier code already exists.")
+            item=Supplier(code=code,name=name,phone=request.phone.strip() or None,email=request.email.strip().lower() or None,active=True)
+            session.add(item); session.commit(); session.refresh(item)
+            logger.info("rpc=CreateSupplier peer=%s actor=%s supplier=%s outcome=OK",context.peer(),actor.id,item.code)
+            return pharmacie_pb2.SupplierResponse(supplier=supplier_to_proto(item))
+        finally: session.close()
+
+    def UpdateSupplier(self, request, context):
+        actor=require_permission(context,"pharmacy.procurement.manage")
+        session=PharmacieSessionLocal()
+        try:
+            item=get_supplier_by_code(session,request.supplier_code.strip())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Supplier not found.")
+            if request.name.strip(): item.name=request.name.strip()
+            if request.phone.strip(): item.phone=request.phone.strip()
+            if request.email.strip(): item.email=request.email.strip().lower()
+            if request.HasField("active"):
+                item.active=request.active
+            session.commit(); session.refresh(item)
+            logger.info("rpc=UpdateSupplier peer=%s actor=%s supplier=%s outcome=OK",context.peer(),actor.id,item.code)
+            return pharmacie_pb2.SupplierResponse(supplier=supplier_to_proto(item))
+        finally: session.close()
+
+    def ListSuppliers(self, request, context):
+        require_permission(context,"pharmacy.procurement.read")
+        limit,offset=page_values(request.limit,request.offset,context)
+        session=PharmacieSessionLocal()
+        try:
+            items,total=list_suppliers(session,query=request.query,active_only=request.active_only,limit=limit,offset=offset)
+            return pharmacie_pb2.ListSuppliersResponse(suppliers=[supplier_to_proto(x) for x in items],total=total)
+        finally: session.close()
 
     def CreatePurchaseOrder(self, request, context):
-        actor = require_permission(context, "pharmacy.stock.manage")
+        actor = require_permission(context, "pharmacy.procurement.manage")
         supplier_code = request.supplier_code.strip().upper()
         idem = request.idempotency_key.strip()
         if not supplier_code or not idem or not request.items:
@@ -647,8 +841,29 @@ class PharmacieService(pharmacie_pb2_grpc.PharmacieServiceServicer):
         finally:
             session.close()
 
+    def GetPurchaseOrder(self, request, context):
+        require_permission(context,"pharmacy.procurement.read")
+        session=PharmacieSessionLocal()
+        try:
+            item=get_purchase_order(session,request.purchase_order_id.strip())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Purchase order not found.")
+            return pharmacie_pb2.PurchaseOrderResponse(purchase_order=purchase_order_to_proto(item))
+        finally: session.close()
+
+    def ListPurchaseOrders(self, request, context):
+        require_permission(context,"pharmacy.procurement.read")
+        status=""
+        if request.status != pharmacie_pb2.PURCHASE_ORDER_STATUS_UNSPECIFIED:
+            status=PO_STATUS_PROTO_TO_DB.get(request.status,"")
+        limit,offset=page_values(request.limit,request.offset,context)
+        session=PharmacieSessionLocal()
+        try:
+            items,total=list_purchase_orders(session,supplier_code=request.supplier_code,status=status,limit=limit,offset=offset)
+            return pharmacie_pb2.ListPurchaseOrdersResponse(purchase_orders=[purchase_order_to_proto(x) for x in items],total=total)
+        finally: session.close()
+
     def ReceivePurchaseOrder(self, request, context):
-        actor = require_permission(context, "pharmacy.stock.manage")
+        actor = require_permission(context, "pharmacy.procurement.manage")
         po_id = request.purchase_order_id.strip()
         idem = request.idempotency_key.strip()
         if not po_id or not idem or not request.items:

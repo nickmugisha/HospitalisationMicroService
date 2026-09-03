@@ -49,6 +49,8 @@ class Appointment(RendezvousBase):
     reminder_recipient_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     reminder_status: Mapped[str] = mapped_column(String(30), nullable=False, default="NOT_REQUESTED", index=True)
     reminder_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reminder_due_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, index=True)
+    reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, index=True)
     created_by: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now, onupdate=utc_now)

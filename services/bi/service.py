@@ -18,6 +18,7 @@ from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat, health_category
 from consultation.v1 import consultation_pb2, consultation_pb2_grpc
 from hospitalisation.v1 import hospitalisation_pb2, hospitalisation_pb2_grpc
+from hr.v1 import hr_pb2_grpc
 from laboratoire.v1 import laboratoire_pb2, laboratoire_pb2_grpc
 from maternite.v1 import maternite_pb2, maternite_pb2_grpc
 from pharmacie.v1 import pharmacie_pb2, pharmacie_pb2_grpc
@@ -29,7 +30,7 @@ from services.bi.config import (
     BI_MAX_MEDICINE_SCAN, BI_MAX_PATIENT_SCAN, CHATBOT_GRPC_TARGET,
     CONSULTATION_GRPC_TARGET, HOSPITALISATION_GRPC_TARGET, LABORATOIRE_GRPC_TARGET,
     MATERNITE_GRPC_TARGET, PHARMACIE_GRPC_TARGET, RENDEZVOUS_GRPC_TARGET,
-    SERVICE_VERSION,
+    HR_GRPC_TARGET, SERVICE_VERSION,
 )
 from services.bi.models import MetricSnapshot, ReportRun
 from services.common.auth_guard import require_permission
@@ -87,6 +88,29 @@ def metric(code,label,value,unit,source,note='',available=True):
 def quality(warnings, unavailable=False):
     if unavailable: return QUALITY_UNAVAILABLE
     return QUALITY_PARTIAL if warnings else QUALITY_COMPLETE
+
+
+SERVICE_ALIASES={
+    'auth':'auth','authentication':'auth','accueil':'accueil','reception':'accueil',
+    'hospitalisation':'hospitalisation','hospitalization':'hospitalisation',
+    'billing':'billing','paiement':'billing','payment':'billing','facturation':'billing',
+    'consultation':'consultation','laboratoire':'laboratoire','laboratory':'laboratoire','lab':'laboratoire',
+    'pharmacie':'pharmacie','pharmacy':'pharmacie','stock':'pharmacie',
+    'maternite':'maternite','maternity':'maternite','rendezvous':'rendezvous','rendez-vous':'rendezvous','appointments':'rendezvous',
+    'bi':'bi','statistiques':'bi','statistics':'bi','chatbot':'chatbot','hr':'hr','rh':'hr',
+}
+
+def normalized_service(raw, context):
+    value=raw.strip().lower()
+    if not value: return ''
+    resolved=SERVICE_ALIASES.get(value)
+    if not resolved: context.abort(grpc.StatusCode.INVALID_ARGUMENT,'Unknown BI service filter.')
+    return resolved
+
+def temporal_warning(request, exact_service: str | None = None):
+    if not request.date_from.strip() and not request.date_to.strip(): return []
+    if exact_service=='rendezvous': return []
+    return ['Date filtering is not available from every source RPC yet; returned non-appointment metrics are current/all-time and are marked PARTIAL rather than being presented as historical.']
 
 class BIService(bi_pb2_grpc.BIServiceServicer):
     def _patients(self,context):
@@ -182,7 +206,7 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
 
     def _appointment_stats(self,request,context):
         warnings=[]; start,end=request_range(request,context)
-        req=rendezvous_pb2.ListAgendaRequest(provider_id='',service=request.service.strip(),limit=300,offset=0)
+        req=rendezvous_pb2.ListAgendaRequest(provider_id='',service='',limit=300,offset=0)
         if start: req.from_at.CopyFrom(ts(start))
         if end: req.to_at.CopyFrom(ts(end))
         try:
@@ -222,9 +246,10 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
             ('pharmacie',PHARMACIE_GRPC_TARGET,lambda ch: pharmacie_pb2_grpc.PharmacieServiceStub(ch)),
             ('maternite',MATERNITE_GRPC_TARGET,lambda ch: maternite_pb2_grpc.MaterniteServiceStub(ch)),
             ('rendezvous',RENDEZVOUS_GRPC_TARGET,lambda ch: rendezvous_pb2_grpc.RendezvousServiceStub(ch)),
+            ('hr',HR_GRPC_TARGET,lambda ch: hr_pb2_grpc.HRServiceStub(ch)),
         ]
         results=[]
-        with ThreadPoolExecutor(max_workers=9) as pool:
+        with ThreadPoolExecutor(max_workers=10) as pool:
             futs=[pool.submit(self._one_health,*s) for s in specs]
             for f in as_completed(futs): results.append(f.result())
         try:
@@ -255,23 +280,23 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
         finally: s.close()
 
     def GetHospitalStats(self,request,context):
-        require_permission(context,'bi.dashboard.read'); p,c,a,l,w=self._hospital_stats(context)
+        require_permission(context,'bi.dashboard.read'); p,c,a,l,w=self._hospital_stats(context); w+=temporal_warning(request)
         return bi_pb2.HospitalStatsResponse(patients=p,consultations=c,active_admissions=a,pending_lab_orders=l,quality=quality(w),warnings=w)
 
     def GetRevenueStats(self,request,context):
-        require_permission(context,'bi.dashboard.read'); ch,pa,ba,cur,w=self._revenue_stats(context)
+        require_permission(context,'bi.dashboard.read'); ch,pa,ba,cur,w=self._revenue_stats(context); w+=temporal_warning(request)
         return bi_pb2.RevenueStatsResponse(total_charges_minor=ch,total_paid_minor=pa,balance_minor=ba,currency_code=cur,quality=quality(w),warnings=w)
 
     def GetOccupancyStats(self,request,context):
-        require_permission(context,'bi.dashboard.read'); t,a,o,x,w=self._occupancy_stats(context)
+        require_permission(context,'bi.dashboard.read'); t,a,o,x,w=self._occupancy_stats(context); w+=temporal_warning(request)
         return bi_pb2.OccupancyStatsResponse(total_beds=t,available_beds=a,occupied_beds=o,out_of_service_beds=x,quality=quality(w),warnings=w)
 
     def GetStockStats(self,request,context):
-        require_permission(context,'bi.dashboard.read'); m,u,a,w=self._stock_stats(context)
+        require_permission(context,'bi.dashboard.read'); m,u,a,w=self._stock_stats(context); w+=temporal_warning(request)
         return bi_pb2.StockStatsResponse(medicines=m,total_units_available=u,stock_alerts=a,quality=quality(w),warnings=w)
 
     def GetMaternityStats(self,request,context):
-        require_permission(context,'bi.dashboard.read'); r,l,d,n,w=self._maternity_stats(context)
+        require_permission(context,'bi.dashboard.read'); r,l,d,n,w=self._maternity_stats(context); w+=temporal_warning(request)
         return bi_pb2.MaternityStatsResponse(maternity_records=r,in_labor=l,delivered=d,newborns=n,quality=quality(w),warnings=w)
 
     def GetAppointmentStats(self,request,context):
@@ -289,6 +314,7 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
 
     def GetDashboard(self,request,context):
         actor=require_permission(context,'bi.dashboard.read')
+        service_filter=normalized_service(request.service, context)
         p,c,a,l,w1=self._hospital_stats(context)
         charges,paid,balance,currency,w2=self._revenue_stats(context)
         total_beds,available,occupied,out_service,w3=self._occupancy_stats(context)
@@ -297,6 +323,9 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
         appts,ac,w6=self._appointment_stats(request,context)
         services=self._service_health()
         warnings=w1+w2+w3+w4+w5+w6
+        if request.date_from.strip() or request.date_to.strip():
+            if service_filter and service_filter != 'rendezvous': warnings += temporal_warning(request)
+            elif not service_filter: warnings += temporal_warning(request)
         offline=[s.service for s in services if s.status==bi_pb2.SERVICE_STATUS_OFFLINE]
         if offline: warnings.append('Service health is partial; offline: '+', '.join(offline))
         metrics=[
@@ -317,6 +346,12 @@ class BIService(bi_pb2_grpc.BIServiceServicer):
             metric('appointments.total','Appointments',appts,'count','rendezvous'),
             metric('appointments.completed','Completed appointments',ac['COMPLETED'],'count','rendezvous'),
         ]
+        if service_filter:
+            if service_filter in {'auth','bi','chatbot','hr'}:
+                metrics=[]
+            else:
+                metrics=[m for m in metrics if m.source_service==service_filter]
+            services=[h for h in services if h.service==service_filter]
         q=quality(warnings)
         self._persist(actor,request,metrics,q,warnings)
         logger.info('rpc=GetDashboard peer=%s actor=%s metrics=%s quality=%s outcome=OK',context.peer(),actor.id,len(metrics),bi_pb2.DataQuality.Name(q))

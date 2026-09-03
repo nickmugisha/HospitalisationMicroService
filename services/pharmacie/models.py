@@ -140,6 +140,10 @@ class PrescriptionInboxItem(PharmacieBase):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     prescription_id: Mapped[str] = mapped_column(String(36), ForeignKey("prescription_inbox.id", ondelete="CASCADE"), nullable=False, index=True)
     medicine_ref: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    medicine_source: Mapped[str] = mapped_column(String(24), nullable=False, default="HOSPITAL_CATALOG", index=True)
+    medicine_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    medicine_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    medicine_strength: Mapped[str | None] = mapped_column(String(120), nullable=True)
     dose: Mapped[str] = mapped_column(String(120), nullable=False)
     frequency: Mapped[str] = mapped_column(String(120), nullable=False)
     duration: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -205,4 +209,18 @@ class BillingOutbox(PharmacieBase):
     amount_minor: Mapped[int] = mapped_column(BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="BIF")
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="PENDING_DELIVERY", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
+
+
+class StockAlertDispatch(PharmacieBase):
+    __tablename__ = "stock_alert_dispatches"
+    __table_args__ = (UniqueConstraint("fingerprint", "dispatched_on", name="uq_stock_alert_dispatch_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    alert_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    medicine_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    batch_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    dispatched_on: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    recipient_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)

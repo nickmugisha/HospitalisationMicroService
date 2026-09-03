@@ -14,13 +14,16 @@ from accueil.v1 import accueil_pb2, accueil_pb2_grpc
 from billing.v1 import billing_pb2, billing_pb2_grpc
 from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat
+from services.common.notifications import send_system_notification
 from laboratoire.v1 import laboratoire_pb2, laboratoire_pb2_grpc
 from database.laboratoire_session import LaboratoireSessionLocal, engine
 from services.common.auth_guard import require_permission
-from services.laboratoire.config import ACCUEIL_GRPC_TARGET, BILLING_GRPC_TARGET, SERVICE_VERSION
+from services.laboratoire.config import ACCUEIL_GRPC_TARGET, AUTH_GRPC_TARGET, BILLING_GRPC_TARGET, SERVICE_VERSION
 from services.laboratoire.models import BillingOutbox, LabOrder, Result, ResultCorrection, Sample
 from services.laboratoire.repository import (
     get_order,
+    get_test_by_ref,
+    list_lab_tests,
     get_order_by_correlation,
     get_test_by_code,
     list_patient_result_orders,
@@ -241,6 +244,30 @@ def build_health_response(desired: str, message: str):
     return build_health_response_compat("laboratoire", desired, message, SERVICE_VERSION)
 
 class LaboratoireService(laboratoire_pb2_grpc.LaboratoireServiceServicer):
+    def ListLabTests(self, request, context):
+        require_permission(context, "lab.catalog.read")
+        limit, offset = page_values(request.limit, request.offset, context)
+        session = LaboratoireSessionLocal()
+        try:
+            items, total = list_lab_tests(session, query=request.query, active_only=request.active_only, limit=limit, offset=offset)
+            return laboratoire_pb2.ListLabTestsResponse(tests=[test_to_proto(item) for item in items], total=total)
+        finally:
+            session.close()
+
+    def GetLabTest(self, request, context):
+        require_permission(context, "lab.catalog.read")
+        ref = request.test_ref.strip()
+        if not ref:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "test_ref is required.")
+        session = LaboratoireSessionLocal()
+        try:
+            item = get_test_by_ref(session, ref)
+            if item is None:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Laboratory test not found.")
+            return laboratoire_pb2.LabTestResponse(test=test_to_proto(item))
+        finally:
+            session.close()
+
     def CreateLabOrder(self, request, context):
         actor = require_permission(context, "consultation.lab.request")
         patient_id = request.patient_id.strip()
@@ -462,6 +489,13 @@ class LaboratoireService(laboratoire_pb2_grpc.LaboratoireServiceServicer):
                     session.commit()
 
             item = get_order(session, item.id)
+            send_system_notification(
+                auth_target=AUTH_GRPC_TARGET, recipient_id=item.ordered_by,
+                notification_type="LAB_RESULT_VALIDATED",
+                title="Résultat laboratoire validé / Lab result validated",
+                body=f"Le résultat / result {item.order_number} ({item.test.name}) est validé et disponible.",
+                source_service="laboratoire", correlation_id=item.correlation_id,
+            )
             logger.info("rpc=ValidateResult peer=%s actor=%s order=%s billing=%s outcome=OK", context.peer(), actor.id, item.id, item.billing_charge_status)
             return laboratoire_pb2.LabResultResponse(result=result_to_proto(item.result), order=order_to_proto(item))
         except SQLAlchemyError:

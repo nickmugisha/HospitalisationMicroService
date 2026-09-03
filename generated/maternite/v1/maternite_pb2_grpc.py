@@ -70,6 +70,16 @@ class MaterniteServiceStub:
                 request_serializer=maternite_dot_v1_dot_maternite__pb2.GetMaternityRecordRequest.SerializeToString,
                 response_deserializer=maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.FromString,
                 _registered_method=True)
+        self.ListMaternityCases = channel.unary_unary(
+                '/hospital.maternite.v1.MaterniteService/ListMaternityCases',
+                request_serializer=maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesRequest.SerializeToString,
+                response_deserializer=maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesResponse.FromString,
+                _registered_method=True)
+        self.CloseMaternityCase = channel.unary_unary(
+                '/hospital.maternite.v1.MaterniteService/CloseMaternityCase',
+                request_serializer=maternite_dot_v1_dot_maternite__pb2.CloseMaternityCaseRequest.SerializeToString,
+                response_deserializer=maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.FromString,
+                _registered_method=True)
         self.HealthCheck = channel.unary_unary(
                 '/hospital.maternite.v1.MaterniteService/HealthCheck',
                 request_serializer=common_dot_v1_dot_common__pb2.HealthRequest.SerializeToString,
@@ -122,6 +132,18 @@ class MaterniteServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListMaternityCases(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseMaternityCase(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def HealthCheck(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -164,6 +186,16 @@ def add_MaterniteServiceServicer_to_server(servicer, server):
             'GetMaternityRecord': grpc.unary_unary_rpc_method_handler(
                     servicer.GetMaternityRecord,
                     request_deserializer=maternite_dot_v1_dot_maternite__pb2.GetMaternityRecordRequest.FromString,
+                    response_serializer=maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.SerializeToString,
+            ),
+            'ListMaternityCases': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListMaternityCases,
+                    request_deserializer=maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesRequest.FromString,
+                    response_serializer=maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesResponse.SerializeToString,
+            ),
+            'CloseMaternityCase': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseMaternityCase,
+                    request_deserializer=maternite_dot_v1_dot_maternite__pb2.CloseMaternityCaseRequest.FromString,
                     response_serializer=maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.SerializeToString,
             ),
             'HealthCheck': grpc.unary_unary_rpc_method_handler(
@@ -360,6 +392,60 @@ class MaterniteService:
             target,
             '/hospital.maternite.v1.MaterniteService/GetMaternityRecord',
             maternite_dot_v1_dot_maternite__pb2.GetMaternityRecordRequest.SerializeToString,
+            maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListMaternityCases(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.maternite.v1.MaterniteService/ListMaternityCases',
+            maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesRequest.SerializeToString,
+            maternite_dot_v1_dot_maternite__pb2.ListMaternityCasesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseMaternityCase(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hospital.maternite.v1.MaterniteService/CloseMaternityCase',
+            maternite_dot_v1_dot_maternite__pb2.CloseMaternityCaseRequest.SerializeToString,
             maternite_dot_v1_dot_maternite__pb2.MaternityRecordResponse.FromString,
             options,
             channel_credentials,

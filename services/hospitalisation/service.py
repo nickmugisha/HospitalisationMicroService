@@ -7,19 +7,21 @@ from datetime import datetime, timezone
 
 import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from accueil.v1 import accueil_pb2, accueil_pb2_grpc
+from auth.v1 import auth_pb2, auth_pb2_grpc
 from billing.v1 import billing_pb2, billing_pb2_grpc
 from common.v1 import common_pb2
 from services.common.health_compat import build_health_response_compat
+from services.common.notifications import send_system_notification
 from hospitalisation.v1 import hospitalisation_pb2, hospitalisation_pb2_grpc
 from database.hospitalisation_session import HospitalisationSessionLocal, engine
 from services.common.auth_guard import require_permission
-from services.hospitalisation.config import ACCUEIL_GRPC_TARGET, BILLING_GRPC_TARGET, SERVICE_VERSION
-from services.hospitalisation.models import Admission, Bed, BillingOutbox, Room, StayNote, Transfer
+from services.hospitalisation.config import ACCUEIL_GRPC_TARGET, AUTH_GRPC_TARGET, BILLING_GRPC_TARGET, SERVICE_VERSION
+from services.hospitalisation.models import Admission, Bed, BillingOutbox, DoctorAssignment, Room, StayNote, Transfer, Ward
 from services.hospitalisation.repository import (
     get_admission,
     get_admission_by_key,
@@ -42,6 +44,13 @@ ADMISSION_STATUS_DB_TO_PROTO = {
     "DISCHARGED": hospitalisation_pb2.ADMISSION_STATUS_DISCHARGED,
     "CANCELLED": hospitalisation_pb2.ADMISSION_STATUS_CANCELLED,
 }
+DOCTOR_STATUS_DB_TO_PROTO = {
+    "ACTIVE": hospitalisation_pb2.DOCTOR_ASSIGNMENT_STATUS_ACTIVE,
+    "COMPLETED": hospitalisation_pb2.DOCTOR_ASSIGNMENT_STATUS_COMPLETED,
+    "CANCELLED": hospitalisation_pb2.DOCTOR_ASSIGNMENT_STATUS_CANCELLED,
+}
+DOCTOR_STATUS_PROTO_TO_DB = {v:k for k,v in DOCTOR_STATUS_DB_TO_PROTO.items()}
+
 BILLING_DB_TO_PROTO = {
     "NOT_CREATED": hospitalisation_pb2.BILLING_CHARGE_STATUS_NOT_CREATED,
     "PENDING_DELIVERY": hospitalisation_pb2.BILLING_CHARGE_STATUS_PENDING_DELIVERY,
@@ -154,6 +163,9 @@ def admission_to_proto(item: Admission):
         created_by=item.created_by,
         billing_charge_status=BILLING_DB_TO_PROTO.get(item.billing_charge_status, hospitalisation_pb2.BILLING_CHARGE_STATUS_UNSPECIFIED),
         correlation_id=item.correlation_id,
+        approved_at=to_timestamp(item.approved_at),
+        approved_by=item.approved_by or "",
+        approval_reason=item.approval_reason or "",
     )
     if item.current_bed is not None:
         result.current_bed.CopyFrom(bed_to_proto(item.current_bed))
@@ -175,6 +187,37 @@ def stay_note_to_proto(item: StayNote):
     )
 
 
+def doctor_assignment_to_proto(item: DoctorAssignment):
+    return hospitalisation_pb2.DoctorAssignment(
+        id=item.id, admission_id=item.admission_id, doctor_user_id=item.doctor_user_id,
+        assigned_by=item.assigned_by, status=DOCTOR_STATUS_DB_TO_PROTO.get(item.status, hospitalisation_pb2.DOCTOR_ASSIGNMENT_STATUS_UNSPECIFIED),
+        assigned_at=to_timestamp(item.assigned_at), completed_at=to_timestamp(item.completed_at),
+        completion_note=item.completion_note or "",
+    )
+
+
+def _directory_entry(context, user_id: str):
+    try:
+        with grpc.insecure_channel(AUTH_GRPC_TARGET) as channel:
+            return auth_pb2_grpc.AuthServiceStub(channel).GetStaffDirectoryEntry(
+                auth_pb2.GetStaffDirectoryEntryRequest(user_id=user_id), metadata=_authorization_metadata(context), timeout=3
+            ).entry
+    except grpc.RpcError as error:
+        if error.code() in (grpc.StatusCode.NOT_FOUND, grpc.StatusCode.PERMISSION_DENIED, grpc.StatusCode.UNAUTHENTICATED):
+            context.abort(error.code(), error.details() or "Doctor directory lookup denied.")
+        context.abort(grpc.StatusCode.UNAVAILABLE, f"Auth staff directory unavailable: {error.code().name}")
+
+
+def _doctor_summary_from_entry(session, entry):
+    count = int(session.scalar(select(func.count()).select_from(DoctorAssignment).where(
+        DoctorAssignment.doctor_user_id == entry.user_id, DoctorAssignment.status == "ACTIVE"
+    )) or 0)
+    return hospitalisation_pb2.DoctorSummary(
+        user_id=entry.user_id, display_name=entry.display_name, employee_number=entry.employee_number,
+        department=entry.department, job_title=entry.job_title, active_assignment_count=count, busy=count > 0,
+    )
+
+
 def _set_health_enum(response, desired: str) -> None:
     field = response.DESCRIPTOR.fields_by_name.get("status")
     if field is None or field.enum_type is None:
@@ -190,6 +233,138 @@ def build_health_response(desired: str, message: str):
     return build_health_response_compat("hospitalisation", desired, message, SERVICE_VERSION)
 
 class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServicer):
+    def ListWards(self, request, context):
+        require_permission(context,"hospitalisation.read")
+        session=HospitalisationSessionLocal()
+        try:
+            stmt=select(Ward)
+            if request.active_only: stmt=stmt.where(Ward.active.is_(True))
+            items=list(session.scalars(stmt.order_by(Ward.code)).all())
+            return hospitalisation_pb2.ListWardsResponse(wards=[ward_to_proto(x) for x in items],total=len(items))
+        finally: session.close()
+
+    def CreateWard(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        code=request.code.strip().upper(); name=request.name.strip()
+        if not code or not name: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"ward code and name are required.")
+        if request.daily_rate_minor < 0: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"daily_rate_minor cannot be negative.")
+        session=HospitalisationSessionLocal()
+        try:
+            if session.scalar(select(Ward).where(Ward.code==code)):
+                context.abort(grpc.StatusCode.ALREADY_EXISTS,"Ward code already exists.")
+            item=Ward(code=code,name=name,active=True,daily_rate_minor=request.daily_rate_minor,currency=request.currency.strip().upper() or "BIF")
+            session.add(item); session.commit(); session.refresh(item)
+            logger.info("rpc=CreateWard peer=%s actor=%s ward=%s outcome=OK",context.peer(),actor.id,item.code)
+            return hospitalisation_pb2.WardResponse(ward=ward_to_proto(item))
+        except IntegrityError:
+            session.rollback(); context.abort(grpc.StatusCode.ALREADY_EXISTS,"Ward code already exists.")
+        finally: session.close()
+
+    def UpdateWard(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        session=HospitalisationSessionLocal()
+        try:
+            item=session.get(Ward,request.ward_id.strip())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Ward not found.")
+            if request.name.strip(): item.name=request.name.strip()
+            if request.HasField("daily_rate_minor") and request.daily_rate_minor < 0: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"daily_rate_minor cannot be negative.")
+            if request.HasField("daily_rate_minor"): item.daily_rate_minor=request.daily_rate_minor
+            item.currency=request.currency.strip().upper() or item.currency
+            if request.HasField("active"):
+                if item.active and not request.active:
+                    occupied = session.scalar(
+                        select(Admission.id)
+                        .join(Bed, Admission.current_bed_id == Bed.id)
+                        .join(Room, Bed.room_id == Room.id)
+                        .where(Room.ward_id == item.id, Admission.status == "ADMITTED")
+                        .limit(1)
+                    )
+                    if occupied:
+                        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "A ward with an occupied bed cannot be disabled.")
+                item.active=request.active
+            session.commit(); session.refresh(item)
+            logger.info("rpc=UpdateWard peer=%s actor=%s ward=%s outcome=OK",context.peer(),actor.id,item.code)
+            return hospitalisation_pb2.WardResponse(ward=ward_to_proto(item))
+        finally: session.close()
+
+    def ListRooms(self, request, context):
+        require_permission(context,"hospitalisation.read")
+        session=HospitalisationSessionLocal()
+        try:
+            stmt=select(Room).options(joinedload(Room.ward)).join(Ward)
+            if request.ward_id.strip(): stmt=stmt.where(Room.ward_id==request.ward_id.strip())
+            if request.ward_code.strip(): stmt=stmt.where(Ward.code==request.ward_code.strip().upper())
+            items=list(session.scalars(stmt.order_by(Ward.code,Room.code)).unique().all())
+            return hospitalisation_pb2.ListRoomsResponse(rooms=[room_to_proto(x) for x in items],total=len(items))
+        finally: session.close()
+
+    def CreateRoom(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        code=request.code.strip().upper(); name=request.name.strip()
+        if not request.ward_id.strip() or not code or not name: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"ward_id, code and name are required.")
+        session=HospitalisationSessionLocal()
+        try:
+            ward=session.get(Ward,request.ward_id.strip())
+            if ward is None: context.abort(grpc.StatusCode.NOT_FOUND,"Ward not found.")
+            if not ward.active: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Cannot create a room in an inactive ward.")
+            if session.scalar(select(Room).where(Room.ward_id==ward.id,Room.code==code)):
+                context.abort(grpc.StatusCode.ALREADY_EXISTS,"Room code already exists in this ward.")
+            item=Room(ward_id=ward.id,code=code,name=name); session.add(item); session.commit(); session.refresh(item); _=item.ward
+            logger.info("rpc=CreateRoom peer=%s actor=%s room=%s outcome=OK",context.peer(),actor.id,item.id)
+            return hospitalisation_pb2.RoomResponse(room=room_to_proto(item))
+        except IntegrityError:
+            session.rollback(); context.abort(grpc.StatusCode.ALREADY_EXISTS,"Room code already exists in this ward.")
+        finally: session.close()
+
+    def UpdateRoom(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        session=HospitalisationSessionLocal()
+        try:
+            item=session.scalar(select(Room).options(joinedload(Room.ward)).where(Room.id==request.room_id.strip()))
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Room not found.")
+            if not request.name.strip(): context.abort(grpc.StatusCode.INVALID_ARGUMENT,"name is required.")
+            item.name=request.name.strip(); session.commit(); session.refresh(item); _=item.ward
+            logger.info("rpc=UpdateRoom peer=%s actor=%s room=%s outcome=OK",context.peer(),actor.id,item.id)
+            return hospitalisation_pb2.RoomResponse(room=room_to_proto(item))
+        finally: session.close()
+
+    def CreateBed(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        code=request.code.strip().upper()
+        if not request.room_id.strip() or not code: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"room_id and code are required.")
+        session=HospitalisationSessionLocal()
+        try:
+            room=session.scalar(select(Room).options(joinedload(Room.ward)).where(Room.id==request.room_id.strip()))
+            if room is None: context.abort(grpc.StatusCode.NOT_FOUND,"Room not found.")
+            if not room.ward.active: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Cannot create a bed in an inactive ward.")
+            if session.scalar(select(Bed).where(Bed.room_id==room.id,Bed.code==code)):
+                context.abort(grpc.StatusCode.ALREADY_EXISTS,"Bed code already exists in this room.")
+            item=Bed(room_id=room.id,code=code,status="AVAILABLE"); session.add(item); session.commit(); session.refresh(item); _=item.room; _=item.room.ward
+            logger.info("rpc=CreateBed peer=%s actor=%s bed=%s outcome=OK",context.peer(),actor.id,item.id)
+            return hospitalisation_pb2.BedResponse(bed=bed_to_proto(item))
+        except IntegrityError:
+            session.rollback(); context.abort(grpc.StatusCode.ALREADY_EXISTS,"Bed code already exists in this room.")
+        finally: session.close()
+
+    def SetBedStatus(self, request, context):
+        actor=require_permission(context,"hospitalisation.structure.manage")
+        mapping={hospitalisation_pb2.BED_STATUS_AVAILABLE:"AVAILABLE",hospitalisation_pb2.BED_STATUS_OUT_OF_SERVICE:"OUT_OF_SERVICE"}
+        desired=mapping.get(request.status)
+        if desired is None: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"Bed status may be set manually only to AVAILABLE or OUT_OF_SERVICE.")
+        if not request.reason.strip(): context.abort(grpc.StatusCode.INVALID_ARGUMENT,"reason is required.")
+        session=HospitalisationSessionLocal()
+        try:
+            item=session.scalar(select(Bed).options(joinedload(Bed.room).joinedload(Room.ward)).where(Bed.id==request.bed_id.strip()).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Bed not found.")
+            occupied=session.scalar(select(Admission.id).where(Admission.current_bed_id==item.id,Admission.status=="ADMITTED").limit(1))
+            if occupied: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Occupied bed status is controlled by the admission workflow.")
+            if desired == "AVAILABLE" and not item.room.ward.active:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION,"A bed in an inactive ward cannot be made AVAILABLE.")
+            item.status=desired; session.commit()
+            logger.info("rpc=SetBedStatus peer=%s actor=%s bed=%s status=%s reason=%s outcome=OK",context.peer(),actor.id,item.id,desired,request.reason.strip())
+            return hospitalisation_pb2.BedResponse(bed=bed_to_proto(item))
+        finally: session.close()
+
     def GetBedAvailability(self, request, context):
         actor = require_permission(context, "hospitalisation.read")
         session = HospitalisationSessionLocal()
@@ -247,6 +422,37 @@ class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServ
         finally:
             session.close()
 
+    def ApproveAdmission(self, request, context):
+        actor=require_permission(context,"hospitalisation.admission.approve")
+        if not request.admission_id.strip(): context.abort(grpc.StatusCode.INVALID_ARGUMENT,"admission_id is required.")
+        if not request.reason.strip(): context.abort(grpc.StatusCode.INVALID_ARGUMENT,"approval reason is required.")
+        session=HospitalisationSessionLocal()
+        try:
+            item=session.scalar(select(Admission).where(Admission.id==request.admission_id.strip()).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Admission not found.")
+            if item.status not in {"PENDING","ADMITTED"}: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Only an active pending/admitted admission can be approved.")
+            if item.approved_at is None:
+                item.approved_at=utc_now(); item.approved_by=actor.id; item.approval_reason=request.reason.strip(); session.commit()
+            item=get_admission(session,item.id)
+            logger.info("rpc=ApproveAdmission peer=%s actor=%s admission=%s outcome=OK",context.peer(),actor.id,item.id)
+            return hospitalisation_pb2.AdmissionResponse(admission=admission_to_proto(item))
+        finally: session.close()
+
+    def ListAdmissions(self, request, context):
+        require_permission(context,"hospitalisation.read")
+        filters=[]
+        if request.patient_id.strip(): filters.append(Admission.patient_id==request.patient_id.strip())
+        if request.status != hospitalisation_pb2.ADMISSION_STATUS_UNSPECIFIED:
+            name=hospitalisation_pb2.AdmissionStatus.Name(request.status).replace("ADMISSION_STATUS_","")
+            filters.append(Admission.status==name)
+        limit=min(max(request.limit or 50,1),200); offset=max(request.offset,0)
+        session=HospitalisationSessionLocal()
+        try:
+            total=int(session.scalar(select(func.count()).select_from(Admission).where(*filters)) or 0)
+            items=list(session.scalars(select(Admission).options(joinedload(Admission.current_bed).joinedload(Bed.room).joinedload(Room.ward)).where(*filters).order_by(Admission.created_at.desc()).offset(offset).limit(limit)).unique().all())
+            return hospitalisation_pb2.ListAdmissionsResponse(admissions=[admission_to_proto(x) for x in items],total=total)
+        finally: session.close()
+
     def AssignBed(self, request, context):
         actor = require_permission(context, "hospitalisation.bed.assign")
         admission_id = request.admission_id.strip(); bed_id = request.bed_id.strip(); key = request.idempotency_key.strip()
@@ -262,14 +468,23 @@ class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServ
                 return hospitalisation_pb2.AdmissionResponse(admission=admission_to_proto(admission))
             if admission.status not in ("PENDING", "ADMITTED"):
                 context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Admission is not active.")
+            if admission.approved_at is None:
+                if "hospitalisation.admission.approve" not in set(actor.permissions):
+                    context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Admission must be approved before a bed can be assigned.")
+                admission.approved_at = utc_now(); admission.approved_by = actor.id
+                admission.approval_reason = "Auto-approved by authorized bed assignment."
             if admission.current_bed_id:
                 if admission.current_bed_id == bed_id:
                     admission.bed_assignment_key = key; session.commit(); admission = get_admission(session, admission.id)
                     return hospitalisation_pb2.AdmissionResponse(admission=admission_to_proto(admission))
                 context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Admission already has a bed. Use TransferBed.")
-            bed = session.scalar(select(Bed).where(Bed.id == bed_id).with_for_update())
+            bed = session.scalar(
+                select(Bed).options(joinedload(Bed.room).joinedload(Room.ward)).where(Bed.id == bed_id).with_for_update()
+            )
             if bed is None:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Bed not found.")
+            if not bed.room.ward.active:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Bed belongs to an inactive ward.")
             if bed.status != "AVAILABLE":
                 context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Bed is not AVAILABLE.")
             bed.status = "OCCUPIED"
@@ -309,6 +524,10 @@ class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServ
             old_bed = by_id.get(admission.current_bed_id); new_bed = by_id.get(target_id)
             if old_bed is None or new_bed is None:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Current or target bed not found.")
+            target_room = session.get(Room, new_bed.room_id)
+            target_ward = session.get(Ward, target_room.ward_id) if target_room is not None else None
+            if target_ward is None or not target_ward.active:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Target bed belongs to an inactive ward.")
             if new_bed.status != "AVAILABLE":
                 context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Target bed is not AVAILABLE.")
             now = utc_now(); old_bed.status = "AVAILABLE"; new_bed.status = "OCCUPIED"; admission.current_bed_id = new_bed.id
@@ -365,6 +584,96 @@ class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServ
         finally:
             session.close()
 
+    def ListDoctors(self, request, context):
+        require_permission(context,"hospitalisation.doctor.read")
+        try:
+            with grpc.insecure_channel(AUTH_GRPC_TARGET) as channel:
+                response=auth_pb2_grpc.AuthServiceStub(channel).ListStaffDirectory(
+                    auth_pb2.ListStaffDirectoryRequest(role_code="MEDECIN",search=request.search,active_only=request.active_only,page={"page":1,"page_size":100}),
+                    metadata=_authorization_metadata(context),timeout=3)
+        except grpc.RpcError as error:
+            context.abort(error.code() if error.code() in (grpc.StatusCode.PERMISSION_DENIED,grpc.StatusCode.UNAUTHENTICATED) else grpc.StatusCode.UNAVAILABLE, error.details() or "Doctor directory unavailable.")
+        session=HospitalisationSessionLocal()
+        try:
+            doctors=[_doctor_summary_from_entry(session,e) for e in response.entries]
+            return hospitalisation_pb2.ListDoctorsResponse(doctors=doctors,total=len(doctors))
+        finally: session.close()
+
+    def AssignDoctor(self, request, context):
+        actor=require_permission(context,"hospitalisation.doctor.assign")
+        admission_id=request.admission_id.strip(); doctor_id=request.doctor_user_id.strip(); key=request.idempotency_key.strip()
+        if not admission_id or not doctor_id or not key: context.abort(grpc.StatusCode.INVALID_ARGUMENT,"admission_id, doctor_user_id and idempotency_key are required.")
+        entry=_directory_entry(context,doctor_id)
+        if not entry.active or "MEDECIN" not in set(entry.roles): context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Selected staff member is not an active doctor.")
+        session=HospitalisationSessionLocal()
+        try:
+            existing=session.scalar(select(DoctorAssignment).where(DoctorAssignment.idempotency_key==key))
+            if existing:
+                summary=_doctor_summary_from_entry(session,entry)
+                return hospitalisation_pb2.AssignDoctorResponse(assignment=doctor_assignment_to_proto(existing),doctor=summary,busy_warning=summary.active_assignment_count>1,warning_message="Doctor already has other active patients." if summary.active_assignment_count>1 else "")
+            admission=session.scalar(select(Admission).where(Admission.id==admission_id).with_for_update())
+            if admission is None: context.abort(grpc.StatusCode.NOT_FOUND,"Admission not found.")
+            if admission.status not in {"PENDING","ADMITTED"}: context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Doctor can only be assigned to an active admission.")
+            active_for_admission=session.scalar(select(DoctorAssignment).where(DoctorAssignment.admission_id==admission.id,DoctorAssignment.status=="ACTIVE").limit(1))
+            if active_for_admission:
+                if active_for_admission.doctor_user_id==doctor_id:
+                    summary=_doctor_summary_from_entry(session,entry)
+                    return hospitalisation_pb2.AssignDoctorResponse(assignment=doctor_assignment_to_proto(active_for_admission),doctor=summary,busy_warning=summary.active_assignment_count>1,warning_message="Doctor already has other active patients." if summary.active_assignment_count>1 else "")
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Admission already has an active doctor assignment. Complete it before assigning another doctor.")
+            busy_before=int(session.scalar(select(func.count()).select_from(DoctorAssignment).where(DoctorAssignment.doctor_user_id==doctor_id,DoctorAssignment.status=="ACTIVE")) or 0)
+            if admission.approved_at is None:
+                if "hospitalisation.admission.approve" not in set(actor.permissions):
+                    context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Admission must be approved before doctor assignment.")
+                admission.approved_at=utc_now(); admission.approved_by=actor.id
+                admission.approval_reason="Auto-approved by authorized doctor assignment."
+            item=DoctorAssignment(admission_id=admission.id,active_admission_key=admission.id,doctor_user_id=doctor_id,assigned_by=actor.id,status="ACTIVE",idempotency_key=key)
+            session.add(item); session.commit(); session.refresh(item)
+            summary=_doctor_summary_from_entry(session,entry)
+            send_system_notification(auth_target=AUTH_GRPC_TARGET,recipient_id=doctor_id,notification_type="HOSPITALISATION_ASSIGNMENT",
+                title="Nouvelle hospitalisation assignée",body=f"Un patient hospitalisé vous a été assigné ({admission.admission_number}).",source_service="hospitalisation",correlation_id=admission.correlation_id)
+            logger.info("rpc=AssignDoctor peer=%s actor=%s admission=%s doctor=%s busy_before=%s outcome=OK",context.peer(),actor.id,admission.id,doctor_id,busy_before)
+            return hospitalisation_pb2.AssignDoctorResponse(assignment=doctor_assignment_to_proto(item),doctor=summary,busy_warning=busy_before>0,warning_message=(f"Doctor already had {busy_before} active patient assignment(s)." if busy_before>0 else ""))
+        except IntegrityError:
+            session.rollback()
+            existing=session.scalar(select(DoctorAssignment).where(DoctorAssignment.idempotency_key==key))
+            if existing:
+                summary=_doctor_summary_from_entry(session,entry)
+                return hospitalisation_pb2.AssignDoctorResponse(assignment=doctor_assignment_to_proto(existing),doctor=summary,busy_warning=summary.active_assignment_count>1,warning_message="Doctor already has other active patients." if summary.active_assignment_count>1 else "")
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Admission already has an active doctor assignment or the operation key conflicts.")
+        finally: session.close()
+
+    def ListDoctorAssignments(self, request, context):
+        actor=require_permission(context,"hospitalisation.doctor.read")
+        filters=[]
+        if request.admission_id.strip(): filters.append(DoctorAssignment.admission_id==request.admission_id.strip())
+        if request.doctor_user_id.strip(): filters.append(DoctorAssignment.doctor_user_id==request.doctor_user_id.strip())
+        if request.status != hospitalisation_pb2.DOCTOR_ASSIGNMENT_STATUS_UNSPECIFIED:
+            status=DOCTOR_STATUS_PROTO_TO_DB.get(request.status); filters.append(DoctorAssignment.status==status)
+        limit=min(max(request.limit or 50,1),200); offset=max(request.offset,0)
+        session=HospitalisationSessionLocal()
+        try:
+            total=int(session.scalar(select(func.count()).select_from(DoctorAssignment).where(*filters)) or 0)
+            items=list(session.scalars(select(DoctorAssignment).where(*filters).order_by(DoctorAssignment.assigned_at.desc()).offset(offset).limit(limit)).all())
+            return hospitalisation_pb2.ListDoctorAssignmentsResponse(assignments=[doctor_assignment_to_proto(x) for x in items],total=total)
+        finally: session.close()
+
+    def CompleteDoctorAssignment(self, request, context):
+        actor=require_permission(context,"hospitalisation.doctor.complete")
+        if not request.assignment_id.strip(): context.abort(grpc.StatusCode.INVALID_ARGUMENT,"assignment_id is required.")
+        session=HospitalisationSessionLocal()
+        try:
+            item=session.scalar(select(DoctorAssignment).where(DoctorAssignment.id==request.assignment_id.strip()).with_for_update())
+            if item is None: context.abort(grpc.StatusCode.NOT_FOUND,"Doctor assignment not found.")
+            if item.status=="COMPLETED": return hospitalisation_pb2.DoctorAssignmentResponse(assignment=doctor_assignment_to_proto(item))
+            if item.status!="ACTIVE": context.abort(grpc.StatusCode.FAILED_PRECONDITION,"Only an ACTIVE doctor assignment can be completed.")
+            if actor.id!=item.doctor_user_id and "hospitalisation.doctor.assign" not in set(actor.permissions):
+                context.abort(grpc.StatusCode.PERMISSION_DENIED,"A doctor may complete only their own assignment.")
+            item.status="COMPLETED"; item.active_admission_key=None; item.completed_at=utc_now(); item.completion_note=request.note.strip() or None
+            session.commit(); session.refresh(item)
+            logger.info("rpc=CompleteDoctorAssignment peer=%s actor=%s assignment=%s outcome=OK",context.peer(),actor.id,item.id)
+            return hospitalisation_pb2.DoctorAssignmentResponse(assignment=doctor_assignment_to_proto(item))
+        finally: session.close()
+
     def DischargePatient(self, request, context):
         actor = require_permission(context, "hospitalisation.discharge")
         admission_id = request.admission_id.strip(); summary = request.discharge_summary.strip(); key = request.idempotency_key.strip()
@@ -393,6 +702,10 @@ class HospitalisationService(hospitalisation_pb2_grpc.HospitalisationServiceServ
             admission.status = "DISCHARGED"; admission.discharged_at = now; admission.discharge_summary = summary
             admission.current_bed_id = None; admission.active_patient_key = None; admission.discharge_idempotency_key = key
             admission.billing_charge_status = "PENDING_DELIVERY"
+            active_assignments=list(session.scalars(select(DoctorAssignment).where(DoctorAssignment.admission_id==admission.id,DoctorAssignment.status=="ACTIVE")).all())
+            for assignment in active_assignments:
+                assignment.status="COMPLETED"; assignment.active_admission_key=None; assignment.completed_at=now
+                assignment.completion_note=assignment.completion_note or "Auto-completed when patient was discharged."
             outbox_key = f"hospitalisation-discharge-{admission.id}"
             existing_outbox = session.scalar(select(BillingOutbox).where(BillingOutbox.idempotency_key == outbox_key))
             if existing_outbox is None:
